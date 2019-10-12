@@ -101,3 +101,5 @@ declare namespace Spiel{
     private update(): void
   }
 }
+
+export default Spiel
