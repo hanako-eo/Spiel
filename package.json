@@ -1,6 +1,6 @@
 {
   "name": "spiel-engine",
-  "version": "0.9.3",
+  "version": "1.0.0",
   "description": "spiel (in German it's game) is a game engine",
   "main": "lib/spiel.js",
   "typings": "types/index.d.ts",

@@ -20,6 +20,7 @@ export interface EntityInterface{
   colide?(entity: string): boolean
   getEntity?(entity: string): EntityInterface
   on?(name: "click", listener: (e) =>void): void
+  changeScene?(name: string | number): void
   key: Array<string>
   canvas: HTMLCanvasElement
   x?: number
@@ -31,7 +32,7 @@ export interface EntityInterface{
 export interface SpritEntityInterface extends EntityInterface{
   sprit: {x: number; y: number}
   animationSpeed: number
-  animation(o: {x: number | Array<number>; y: number | Array<number>}, step?: () =>void)
+  animation(o: {x: number | Array<number>; y: number | Array<number>}, step?: () =>void): void
 }
 export interface TextEntityInterface{
   init?(): void
@@ -39,6 +40,7 @@ export interface TextEntityInterface{
   redraw?(): void
   afterRedraw?(): void
   on?(name: "click", listener: (e) =>void): void
+  changeScene?(name: string | number): void
   canvas: HTMLCanvasElement
   replaced?: Array<[string | RegExp, any]>
   x?: number
@@ -110,6 +112,7 @@ export namespace Entity{
     on(name: "click", listener: (e: MouseEvent) =>void){
       if(name === "click") click((this as unknown as TextEntityInterface), listener)
     }
+    changeScene(name: string | number){}
   }
   export class Image implements EntityInterface{
     public scale = 1
@@ -126,6 +129,7 @@ export namespace Entity{
     on(name: "click", listener: (e: MouseEvent) =>void){
       if(name === "click") click(this, listener)
     }
+    changeScene(name: string | number){}
     audio(name: string): HTMLAudioElement{ return document.createElement("audio") }
     colide(entity: string): boolean{ return false }
     getEntity(entity: string): EntityInterface{ return Object.assign({}, this) }
@@ -156,6 +160,21 @@ export class Game{
       o.scene.forEach((scene) =>{
         if(entityName in scene.entity){
           scene.entity[entityName].canvas = this.canvas
+          scene.entity[entityName].getEntity = function(entity){
+            return Object.assign({}, scene.entity[entity])
+          }
+          scene.entity[entityName].audio = (name) =>{
+            if(!(name in o.load)) throw new ReferenceError(`${name} is not loaded or defined with this name`)
+            if(name in this.load){
+              if((this.load[name] as HTMLAudioElement).title !== "Audio") throw new TypeError(`${name} is not Audio Element`)
+              return this.load[name] as HTMLAudioElement
+            }
+            return document.createElement("audio")
+          }
+          scene.entity[entityName].changeScene = (name) =>{
+            let i = o.scene.findIndex((scene) =>scene.name === name)
+            if(i !== -1) this.use = o.scene[i].name
+          }
           if(l instanceof HTMLImageElement){
             if(scene.entity[entityName].entityWidth === undefined) scene.entity[entityName].entityWidth = l.width
             if(scene.entity[entityName].entityHeight === undefined) scene.entity[entityName].entityHeight = l.height
@@ -164,17 +183,6 @@ export class Game{
                 this.x + this.entityWidth > scene.entity[entity].x &&
                 this.y < scene.entity[entity].y + scene.entity[entity].entityHeight &&
                 this.entityHeight + this.y > scene.entity[entity].y
-            }
-            scene.entity[entityName].getEntity = function(entity){
-              return Object.assign({}, scene.entity[entity])
-            }
-            scene.entity[entityName].audio = (name) =>{
-              if(!(name in o.load)) throw new ReferenceError(`${name} is not loaded or defined with this name`)
-              if(name in this.load){
-                if((this.load[name] as HTMLAudioElement).title !== "Audio") throw new TypeError(`${name} is not Audio Element`)
-                return this.load[name] as HTMLAudioElement
-              }
-              return document.createElement("audio")
             }
             if(scene.entity[entityName] instanceof Entity.Sprit){
               class InvisibleClass{
@@ -216,8 +224,16 @@ export class Game{
     let i = 0
     let iL = Object.keys(o.load).length
     LoaderEmitter.on("loaded", () =>{
-      
       if(++i === iL) this.start(o)
+      else{
+        let text = `Game Loaded at ${(i / iL) * 100}%`
+        this.context.save()
+        this.context.clearRect(0, 0, this.w, this.h)
+        this.context.font = "26px sans-serif"
+        if(o.darkmode || !("darkmode" in o)) this.context.fillStyle = "#fff"
+        this.context.fillText(text, this.w / 2 - this.context.measureText(text).width / 2, this.h / 2 - 26 / 2)
+        this.context.restore()
+      }
     })
   }
   private start(o: OptionInterface){
@@ -227,27 +243,32 @@ export class Game{
         .filter((keys) =>keys !== null)
         .join("+"))
     }
-    window.onkeyup = (ev) =>this.key = this.key.filter((v) => v !== [ev.ctrlKey ? "Ctrl" : null, ev.altKey ? "Alt" : null, ev.shiftKey ? "Shift" : null, ev.key === "Control" || ev.key === "Alt" || ev.key === "Shift" ? null : ev.key === "Delete" ? "Del" : ev.key === " " ? "Space" : ev.key]
+    window.onkeyup = (ev: KeyboardEvent) =>this.key = this.key.filter((v) =>v !== [ev.ctrlKey ? "Ctrl" : null, ev.altKey ? "Alt" : null, ev.shiftKey ? "Shift" : null, ev.key === "Control" || ev.key === "Alt" || ev.key === "Shift" ? null : ev.key === "Delete" ? "Del" : ev.key === " " ? "Space" : ev.key]
       .filter((keys) =>keys !== null)
       .join("+"))
     let sceneId = o.scene.findIndex((scene) =>this.use === scene.name)
-    if(sceneId != -1){
-      this.entityList = o.scene[sceneId].entity
-      setTimeout(() =>{
-        for(const entityName in this.entityList){
-          if("init" in this.entityList[entityName]) this.entityList[entityName].init()
-          this.draw(entityName)
+    if(sceneId !== -1) this.scene(o, sceneId)
+  }
+  private scene(o: OptionInterface, sceneId: number){
+    this.entityList = o.scene[sceneId].entity
+    setTimeout(() =>{
+      for(const entityName in this.entityList){
+        if("init" in this.entityList[entityName]) this.entityList[entityName].init()
+        this.draw(entityName)
+      }
+      const update = () =>{
+        setTimeout(() =>{
+          this.context.clearRect(0, 0, this.w, this.h)
+          this.update()
+        })
+        if(this.use === o.scene[sceneId].name) requestAnimationFrame(update)
+        else{
+          let sceneId = o.scene.findIndex((scene) =>this.use === scene.name)
+          if(sceneId !== -1) this.scene(o, sceneId)
         }
-        const update = () =>{
-          setTimeout(() =>{
-            this.context.clearRect(0, 0, this.w, this.h)
-            this.update()
-          })
-          requestAnimationFrame(update)
-        }
-        requestAnimationFrame(update)
-      })
-    }
+      }
+      requestAnimationFrame(update)
+    })
   }
   private draw(entityName){
     if(entityName in this.load){

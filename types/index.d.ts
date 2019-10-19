@@ -8,7 +8,7 @@ declare namespace Spiel{
   }
   export interface SceneInterface{
     name: string | number
-    entity: {[x: string]: EntityInterface}
+    entity: {[x: string]: EntityInterface | SpritEntityInterface | TextEntityInterface}
   }
   export interface EntityInterface{
     init?(): void
@@ -18,7 +18,8 @@ declare namespace Spiel{
     audio?(name: string): HTMLAudioElement | null
     colide?(entity: string): boolean
     getEntity?(entity: string): EntityInterface
-    on?(name: "click", listener: (e) =>void): void
+    on?(name: "click", listener: (e: MouseEvent) =>void): void
+    changeScene(name: string | number): void
     key: Array<string>
     canvas: HTMLCanvasElement
     x?: number
@@ -30,7 +31,7 @@ declare namespace Spiel{
   export interface SpritEntityInterface extends EntityInterface{
     sprit: {x: number; y: number}
     animationSpeed: number
-    animation(o: {x: number | Array<number>; y: number | Array<number>}, step?: () =>void)
+    animation(o: {x: number | Array<number>; y: number | Array<number>}, step?: () =>void): void
   }
   export interface TextEntityInterface{
     init?(): void
@@ -38,6 +39,7 @@ declare namespace Spiel{
     redraw?(): void
     afterRedraw?(): void
     on?(name: "click", listener: (e) =>void): void
+    changeScene?(name: string | number): void
     canvas: HTMLCanvasElement
     replaced?: Array<[string | RegExp, any]>
     x?: number
@@ -62,6 +64,7 @@ declare namespace Spiel{
       redraw(): void
       beforeRedraw(): void
       on(name: "click", listener: (e: MouseEvent) =>void): void
+      changeScene(name: string | number): void
     }
     export class Image implements EntityInterface{
       public scale: number
@@ -79,6 +82,7 @@ declare namespace Spiel{
       audio(name: string): HTMLAudioElement
       colide(entity: string): boolean
       getEntity(entity: string): EntityInterface
+      changeScene(name: string | number): void
     }
     export class Sprit extends Image implements SpritEntityInterface{
       public sprit: { x: number; y: number }
@@ -97,6 +101,7 @@ declare namespace Spiel{
     private h: number
     constructor(o: OptionInterface, w: number, h: number)
     private start(o: OptionInterface): void
+    private scene(o: OptionInterface, sceneId: number): void
     private draw(entityName): void
     private update(): void
   }
