@@ -1,57 +1,10 @@
 import { EventEmitter } from "events"
-
-interface OptionInterface{
-  darkmode?: boolean
-  pixel?: boolean
-  canvas?: HTMLCanvasElement
-  load: {[x: string]: Promise<HTMLImageElement | HTMLAudioElement | {font: string, text: string, title: string}>}
-  scene?: Array<SceneInterface>
-}
-export interface SceneInterface{
-  name: string | number
-  entity: {[x: string]: EntityInterface}
-}
-export interface EntityInterface{
-  init?(): void
-  beforeRedraw?(): void
-  redraw?(): void
-  afterRedraw?(): void
-  audio?(name: string): HTMLAudioElement | null
-  colide?(entity: string): boolean
-  getEntity?(entity: string): EntityInterface
-  on?(name: "click", listener: (e) =>void): void
-  changeScene?(name: string | number): void
-  key: Array<string>
-  canvas: HTMLCanvasElement
-  x?: number
-  y?: number
-  entityWidth?: number
-  entityHeight?: number
-  scale: number
-}
-export interface SpritEntityInterface extends EntityInterface{
-  sprit: {x: number; y: number}
-  animationSpeed: number
-  animation(o: {x: number | Array<number>; y: number | Array<number>}, step?: () =>void): void
-}
-export interface TextEntityInterface{
-  init?(): void
-  beforeRedraw?(): void
-  redraw?(): void
-  afterRedraw?(): void
-  on?(name: "click", listener: (e) =>void): void
-  changeScene?(name: string | number): void
-  canvas: HTMLCanvasElement
-  replaced?: Array<[string | RegExp, any]>
-  x?: number
-  y?: number
-  entityWidth?: number
-  entityHeight?: number
-}
+import lemon from "lemon-dash"
+import SpielInterface from "./../types/index"
 
 // Function
 let LoaderEmitter = new EventEmitter()
-function click(entity: EntityInterface | TextEntityInterface, listener){
+function click(entity: SpielInterface.EntityInterface, listener){
   entity.canvas.addEventListener("click", (ev) =>{
     let mouseX = Math.abs(entity.canvas.offsetLeft - ev.x)
     let mouseY = Math.abs(entity.canvas.offsetTop - ev.y)
@@ -100,21 +53,8 @@ export namespace Loader{
 
 // Class
 export namespace Entity{
-  export class Text implements TextEntityInterface{
-    public canvas: HTMLCanvasElement
-    public x: number
-    public y: number
-    public replaced: Array<[string | RegExp, any]> = []
-    init(){}
-    afterRedraw(){}
-    redraw(){}
-    beforeRedraw(){}
-    on(name: "click", listener: (e: MouseEvent) =>void){
-      if(name === "click") click((this as unknown as TextEntityInterface), listener)
-    }
-    changeScene(name: string | number){}
-  }
-  export class Image implements EntityInterface{
+  export class Image implements SpielInterface.EntityInterface{
+    public body = null
     public scale = 1
     public canvas: HTMLCanvasElement
     public x: number
@@ -131,10 +71,13 @@ export namespace Entity{
     }
     changeScene(name: string | number){}
     audio(name: string): HTMLAudioElement{ return document.createElement("audio") }
-    colide(entity: string): boolean{ return false }
-    getEntity(entity: string): EntityInterface{ return Object.assign({}, this) }
+    collide(entity: string, border: number | null): boolean{ return false }
+    getEntity(entity: string): SpielInterface.EntityInterface{ return Object.assign({}, this) }
   }
-  export class Sprit extends Image implements SpritEntityInterface{
+  export class Text extends Image implements SpielInterface.TextEntityInterface{
+    public replaced: Array<[string | RegExp, any]> = []
+  }
+  export class Sprit extends Image implements SpielInterface.SpritEntityInterface{
     public sprit = {x: 0, y: 0}
     public animationSpeed = 300
     animation(o: {x?: number | Array<number>; y?: number | Array<number>}, step?: (n: number) =>void){}
@@ -142,22 +85,25 @@ export namespace Entity{
 }
 export class Game{
   private key = []
+  private camera = {use: false, width: this.w, height: this.h}
   private canvas: HTMLCanvasElement
   private context: CanvasRenderingContext2D
   private use: string | number
   private load: {[x: string]: HTMLImageElement | HTMLAudioElement | {font: string, text: string}} = {}
-  private entityList: {[x: string]: EntityInterface | TextEntityInterface}
-  constructor(o: OptionInterface, private w = 800, private h = 600){
+  private entityList: {[x: string]: SpielInterface.EntityInterface | SpielInterface.TextEntityInterface}
+  constructor(o: SpielInterface.OptionInterface, private w = 800, private h = 600){
     this.canvas = o.canvas || document.body.appendChild(document.createElement("canvas"))
     if(o.pixel) this.canvas.style.imageRendering = "pixelated"
     if(o.darkmode || !("darkmode" in o)) this.canvas.style.backgroundColor = "#000"
     this.context = this.canvas.getContext("2d")
     this.canvas.height = this.h
     this.canvas.width = this.w
+    this.camera = Object.assign({}, this.camera, o.camera)
     this.use = o.scene[0].name
     for(const entityName in o.load) o.load[entityName].then((l) =>{
       this.load[entityName] = l
       o.scene.forEach((scene) =>{
+        const self = this
         if(entityName in scene.entity){
           scene.entity[entityName].canvas = this.canvas
           scene.entity[entityName].getEntity = function(entity){
@@ -178,11 +124,33 @@ export class Game{
           if(l instanceof HTMLImageElement){
             if(scene.entity[entityName].entityWidth === undefined) scene.entity[entityName].entityWidth = l.width
             if(scene.entity[entityName].entityHeight === undefined) scene.entity[entityName].entityHeight = l.height
-            scene.entity[entityName].colide = function(this: EntityInterface, entity){
-              return this.x < scene.entity[entity].x + scene.entity[entity].entityWidth &&
+            scene.entity[entityName].collide = function(this: SpielInterface.EntityInterface, entity, border = null){
+              if(border === null){
+                if(scene.entity[entity].body === null) return this.x < scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) &&
+                  this.x + this.entityWidth > scene.entity[entity].x &&
+                  this.y < scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) &&
+                  this.y + this.entityHeight > scene.entity[entity].y
+                return this.x < scene.entity[entity].x + scene.entity[entity].body.x + scene.entity[entity].body.width &&
+                  this.x + this.entityWidth > scene.entity[entity].x + scene.entity[entity].body.x &&
+                  this.y < scene.entity[entity].y + scene.entity[entity].body.y + scene.entity[entity].body.height &&
+                  this.y + this.entityHeight > scene.entity[entity].y + scene.entity[entity].body.y
+              }
+              return (this.x < scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) &&
                 this.x + this.entityWidth > scene.entity[entity].x &&
-                this.y < scene.entity[entity].y + scene.entity[entity].entityHeight &&
-                this.entityHeight + this.y > scene.entity[entity].y
+                this.y < scene.entity[entity].y + (border * scene.entity[entity].scale) &&
+                this.y + this.entityHeight > scene.entity[entity].y) ||
+                (this.x < scene.entity[entity].x + (border * scene.entity[entity].scale) &&
+                this.x + this.entityWidth > scene.entity[entity].x &&
+                this.y < scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) &&
+                this.y + this.entityHeight > scene.entity[entity].y) || 
+                (this.x < scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) &&
+                this.x + this.entityWidth > scene.entity[entity].x &&
+                this.y < scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) &&
+                this.y + this.entityHeight > scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) - (border * scene.entity[entity].scale)) ||
+                (this.x < scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) - (border * scene.entity[entity].scale) &&
+                this.x + this.entityWidth > scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) &&
+                this.y < scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) &&
+                this.y + this.entityHeight > scene.entity[entity].y)
             }
             if(scene.entity[entityName] instanceof Entity.Sprit){
               class InvisibleClass{
@@ -190,7 +158,7 @@ export class Game{
                 private start: number
                 anim(){
                   const self = this
-                  return function(this: SpritEntityInterface, o: {x?: number | number[]; y?: number | number[]}, step = (i: number) =>{}){
+                  return function(this: SpielInterface.SpritEntityInterface, o: {x?: number | number[]; y?: number | number[]}, step = (i: number) =>{}){
                     if(self.start === undefined) self.start = Math.trunc((Date.now() + this.animationSpeed) / 10) * 10
                     let spritP = Object.assign({}, {x: 0, y: 0}, o)
                     let arrLength = Array.isArray(spritP.x) ? spritP.x.length : Array.isArray(spritP.y) ? spritP.y.length : [0].length
@@ -215,7 +183,7 @@ export class Game{
                 }
               }
               let invisible = new InvisibleClass();
-              (scene.entity[entityName] as SpritEntityInterface).animation = invisible.anim()
+              (scene.entity[entityName] as SpielInterface.SpritEntityInterface).animation = invisible.anim()
             }
           }
         }
@@ -236,9 +204,9 @@ export class Game{
       }
     })
   }
-  private start(o: OptionInterface){
+  private start(o: SpielInterface.OptionInterface){
     window.onkeydown = (ev: KeyboardEvent) =>{
-      if(ev.key.includes("Arrow")) ev.preventDefault()
+      ev.preventDefault()
       this.key.push([ev.ctrlKey ? "Ctrl" : null, ev.altKey ? "Alt" : null, ev.shiftKey ? "Shift" : null, ev.key === "Control" || ev.key === "Alt" || ev.key === "Shift" ? null : ev.key === "Delete" ? "Del" : ev.key === " " ? "Space" : ev.key]
         .filter((keys) =>keys !== null)
         .join("+"))
@@ -249,7 +217,7 @@ export class Game{
     let sceneId = o.scene.findIndex((scene) =>this.use === scene.name)
     if(sceneId !== -1) this.scene(o, sceneId)
   }
-  private scene(o: OptionInterface, sceneId: number){
+  private scene(o: SpielInterface.OptionInterface, sceneId: number){
     this.entityList = o.scene[sceneId].entity
     setTimeout(() =>{
       for(const entityName in this.entityList){
@@ -270,32 +238,32 @@ export class Game{
       requestAnimationFrame(update)
     })
   }
-  private draw(entityName){
+  private draw(entityName: string){
     if(entityName in this.load){
       const o = this.load[entityName]
       if(o instanceof HTMLImageElement){
         if("sprit" in this.entityList[entityName]) this.context.drawImage(
           o,
-          (this.entityList[entityName].entityWidth * (this.entityList[entityName] as SpritEntityInterface).sprit.x),
-          (this.entityList[entityName].entityHeight * (this.entityList[entityName] as SpritEntityInterface).sprit.y),
+          (this.entityList[entityName].entityWidth * (this.entityList[entityName] as SpielInterface.SpritEntityInterface).sprit.x),
+          (this.entityList[entityName].entityHeight * (this.entityList[entityName] as SpielInterface.SpritEntityInterface).sprit.y),
           this.entityList[entityName].entityWidth,
           this.entityList[entityName].entityHeight,
           this.entityList[entityName].x,
           this.entityList[entityName].y,
-          this.entityList[entityName].entityWidth * (this.entityList[entityName] as EntityInterface).scale,
-          this.entityList[entityName].entityHeight * (this.entityList[entityName] as EntityInterface).scale
+          this.entityList[entityName].entityWidth * this.entityList[entityName].scale,
+          this.entityList[entityName].entityHeight * this.entityList[entityName].scale
         ) 
         else this.context.drawImage(
           o, 
           this.entityList[entityName].x, 
           this.entityList[entityName].y,
-          this.entityList[entityName].entityWidth * (this.entityList[entityName] as EntityInterface).scale,
-          this.entityList[entityName].entityHeight * (this.entityList[entityName] as EntityInterface).scale
+          this.entityList[entityName].entityWidth * this.entityList[entityName].scale,
+          this.entityList[entityName].entityHeight * this.entityList[entityName].scale
         )
       }
       else if(!(o instanceof HTMLAudioElement)){
         let text = o.text
-        if("replaced" in this.entityList[entityName]) [(["", ""] as [string, string]), ...(this.entityList[entityName] as TextEntityInterface).replaced].forEach((arr) =>{
+        if("replaced" in this.entityList[entityName]) [(["", ""] as [string, string]), ...(this.entityList[entityName] as SpielInterface.TextEntityInterface).replaced].forEach((arr) =>{
           text = text.replace(...arr).replace(/\*[a-z0-9]+/i, (result) =>result.slice(1) in this.entityList[entityName] ? this.entityList[entityName][result.slice(1)] : result)
         })
         this.context.font = o.font
@@ -305,7 +273,7 @@ export class Game{
   }
   private update(){
     for(const entityName in this.entityList){
-      if(this.entityList[entityName] instanceof Entity.Image) (this.entityList[entityName] as EntityInterface).key = this.key 
+      if(this.entityList[entityName] instanceof Entity.Image) (this.entityList[entityName] as SpielInterface.EntityInterface).key = this.key 
       if("beforeRedraw" in this.entityList[entityName]) this.entityList[entityName].beforeRedraw()
       if("redraw" in this.entityList[entityName]) this.entityList[entityName].redraw()
       this.draw(entityName)

@@ -1,6 +1,6 @@
 {
   "name": "spiel-engine",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "spiel (in German it's game) is a game engine",
   "main": "lib/spiel.js",
   "typings": "types/index.d.ts",
@@ -44,5 +44,8 @@
   "bugs": {
     "url": "https://github.com/ashikuri/Spiel/issues"
   },
-  "homepage": "https://github.com/ashikuri/Spiel#readme"
+  "homepage": "https://github.com/ashikuri/Spiel#readme",
+  "dependencies": {
+    "lemon-dash": "^1.0.0"
+  }
 }

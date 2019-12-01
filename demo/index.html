@@ -13,8 +13,9 @@
     <script>
         new Spiel.Game({
             darkmode: false,
+            pixel: true,
             load: {
-                image1: Spiel.Loader.Image("./image1.png"),
+                image1: Spiel.Loader.Image("./image3.png"),
                 image2: Spiel.Loader.Image("./image2.png"),
             },
             scene: [
@@ -23,11 +24,16 @@
                     entity: {
                         image1: Spiel.ex(class extends Spiel.Entity.Image{
                             init(){
+                                this.body = {
+                                    x: 2,
+                                    y: 2,
+                                    width: 46,
+                                    height: 34
+                                }
                                 this.x = 100
                                 this.y = 100
                             }
                             redraw(){
-                                console.log("scene1")
                                 if(this.key.findIndex((v) =>v === "a") !== -1){
                                     this.changeScene("scene2")
                                 }
@@ -35,8 +41,17 @@
                         }),
                         image2: Spiel.ex(class extends Spiel.Entity.Image{
                             init(){
-                                this.x = 200
+                                this.x = 150
                                 this.y = 100
+                            }
+                            beforeRedraw(){
+                                console.log(this.colide("image1", 2))
+                            }
+                            redraw(){
+                                if(this.key.findIndex((key) =>key === "ArrowUp") !== -1) this.y += -1
+                                if(this.key.findIndex((key) =>key === "ArrowDown") !== -1) this.y += 1
+                                if(this.key.findIndex((key) =>key === "ArrowLeft") !== -1) this.x += -1
+                                if(this.key.findIndex((key) =>key === "ArrowRight") !== -1) this.x += 1
                             }
                         }),
                     }
