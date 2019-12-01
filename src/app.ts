@@ -1,5 +1,4 @@
 import { EventEmitter } from "events"
-import lemon from "lemon-dash"
 import SpielInterface from "./../types/index"
 
 // Function
