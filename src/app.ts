@@ -246,7 +246,6 @@ export class Game{
   private scene(o: SpielInterface.OptionInterface, sceneId: number){
     if(!(sceneId in this.saveObject)) this.saveObject[sceneId] = this.scenes[sceneId].entity
     for(const entityName in this.saveObject[sceneId]){
-      console.log(this.saveObject[sceneId][entityName])
       if("init" in this.saveObject[sceneId][entityName]){
         this.saveObject[sceneId][entityName].init()
         if(o.save || ("save" in o)) this.saveObject[sceneId][entityName].init = () =>{}
