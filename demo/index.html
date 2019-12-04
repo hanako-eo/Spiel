@@ -11,9 +11,10 @@
     <h1>Use "z" for change scene (scene2 => scene1)</h1>
     <script src="./../lib/spiel.js"></script>
     <script>
-        new Spiel.Game({
+        const game = new Spiel.Game({
             darkmode: false,
             pixel: true,
+            // save: true,
             load: {
                 image1: Spiel.Loader.Image("./image3.png"),
                 image2: Spiel.Loader.Image("./image2.png"),
@@ -22,6 +23,9 @@
                 {
                     name: "scene1",
                     entity: {
+                        // "@camera": {
+                            
+                        // },
                         image1: Spiel.ex(class extends Spiel.Entity.Image{
                             init(){
                                 this.body = {
@@ -45,7 +49,7 @@
                                 this.y = 100
                             }
                             beforeRedraw(){
-                                console.log(this.colide("image1", 2))
+                                // console.log(this.collide("image1", 2))
                             }
                             redraw(){
                                 if(this.key.findIndex((key) =>key === "ArrowUp") !== -1) this.y += -1
@@ -65,7 +69,7 @@
                                 this.y = 400
                             }
                             redraw(){
-                                console.log("scene2")
+                                // console.log("scene2")
                                 if(this.key.findIndex((v) =>v === "z") !== -1){
                                     this.changeScene("scene1")
                                 }
