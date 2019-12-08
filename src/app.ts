@@ -10,7 +10,13 @@ function click(entity: SpielInterface.EntityInterface, listener){
     if((entity.x <= mouseX && (entity.x + entity.entityWidth) >= mouseX) && (entity.y <= mouseY && (entity.y + entity.entityWidth) >= mouseY)) listener(Object.assign({}, ev, {x: mouseX, y: mouseY}))
   })
 }
-const isClass = fn => /^\s*class/.test(fn.toString())
+const isClass = (fn) =>{
+  try {
+    return /^\s*class/.test(fn.toString())
+  } catch (error) {
+    return false
+  }
+}
 export function ex(Class: new (args: any) =>any, ...args: any): any{
   return new Class(args)
 }
@@ -272,6 +278,7 @@ export class Game{
     if(!(sceneId in this.saveObject)) this.saveObject[sceneId] = this.scenes[sceneId].entity
     setTimeout(async () =>{
       if("@camera" in this.saveObject[sceneId]){
+        if(isClass(this.saveObject[sceneId]["@camera"])) this.saveObject[sceneId]["@camera"] = ex(this.saveObject[sceneId]["@camera"] as unknown as new () =>SpielInterface.CameraInterface)
         this.setEntity(o, this.scenes[sceneId], "@camera")
         this.camera[sceneId] = this.saveObject[sceneId]["@camera"]
         if("init" in this.camera[sceneId]){

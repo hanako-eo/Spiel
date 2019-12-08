@@ -35,7 +35,7 @@
                                 this.setTarget("image2")
                             }
                         },
-                        image1: class extends Spiel.Entity.Image{
+                        image1: Spiel.ex(class extends Spiel.Entity.Image{
                             init(){
                                 this.body = {
                                     x: 2,
@@ -53,7 +53,7 @@
                                     this.changeScene("scene2")
                                 }
                             }
-                        },
+                        }),
                         image2: class extends Spiel.Entity.Image{
                             init(){
                                 this.x = 350
