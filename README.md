@@ -1,11 +1,17 @@
 # Spiel
-spiel (in German it's game) is a simple game engine
+Spiel (game in German) is a simple game engine.
 
-## How use Spiel
-🤔? it's a good question?
+## How to use Spiel
+🤔? it's a good question;
 
-Spiel is a simple object ( a typescript namespace in reality but 🤫 ),
-there's in it `ex`( for execute a class ), `Loader`( a object for loading elements ), `Entity`( a object for creating a class entity ) and `Game`( to start the game )
+Spiel is a simple object (a typescript namespace in reality but 🤫 ),
+in it, there's `ex`(to execute a class), `Loader`(an object to load elements), `Entity`(an object to create a class entity) and `Game`(to start the game)
 
-## How install Spiel
-with npm. `npm i spiel-engine` ( yes, spiel is already used )
+## How to install Spiel?
+with npm. `npm i spiel-engine` (yes, spiel is already used)
+
+## How to create a game
+with Game of course!
+````js
+new Spiel.Game()
+```
