@@ -3,9 +3,9 @@ export interface OptionInterface{
   pixel?: boolean
   canvas?: HTMLCanvasElement
   load: {[x: string]: Promise<HTMLImageElement | HTMLAudioElement | {font: string, text: string, title: string}>}
-  scene?: Array<SceneInterface>
+  scene: Array<SceneInterface>
   save?: boolean
-  
+  loadScene?(ctx: CanvasRenderingContext2D, percentage: number): void
 }
 interface AnyEntity{
   [x: string]: EntityInterface | SpritEntityInterface | TextEntityInterface
@@ -25,21 +25,21 @@ export interface BodyEntityInterface{
 }
 export interface CameraInterface{
   init?(): void
-  beforeRedraw?(): void
-  redraw?(): void
-  afterRedraw?(): void
+  update?(): void
   audio?(name: string): HTMLAudioElement | null
   getEntity?(entity: string): EntityInterface
+  getTarget(): EntityInterface | SpritEntityInterface | TextEntityInterface
+  setTarget(entity: string): void
   canvas: HTMLCanvasElement
-  target: EntityInterface | SpritEntityInterface | TextEntityInterface
   x?: number
   y?: number
   width?: number
   height?: number
+  scene?: SceneInterface
+  spielEngine?: Game
+  background?: Promise<HTMLImageElement>
 }
 export interface EntityInterface{
-  spielEngine: Game
-  body?: BodyEntityInterface
   init?(): void
   beforeRedraw?(): void
   redraw?(): void
@@ -49,6 +49,10 @@ export interface EntityInterface{
   getEntity?(entity: string): EntityInterface
   on?(name: "click", listener: (e: MouseEvent) =>void): void
   changeScene(name: string | number): void
+  scene?: SceneInterface
+  spielEngine?: Game
+  body?: BodyEntityInterface
+  hidden?: boolean
   key?: Array<string>
   canvas: HTMLCanvasElement
   x?: number
@@ -64,7 +68,6 @@ export interface SpritEntityInterface extends EntityInterface{
 }
 export interface TextEntityInterface extends EntityInterface{
   replaced?: Array<[string | RegExp, any]>
-
 }
 export function ex(Class: new (...args) =>any, ...any: any): any
 export namespace Loader{
@@ -114,18 +117,22 @@ export namespace Entity{
     public animationSpeed: number
     animation(o: { x?: number | Array<number>; y?: number | Array<number> }, step?: (n: number) =>void)
   }
-}
-export class Camera implements CameraInterface{
-  init?(): void
-  beforeRedraw?(): void
-  redraw?(): void
-  afterRedraw?(): void
-  audio?(name: string): HTMLAudioElement
-  getEntity?(entity: string): EntityInterface
-  canvas: HTMLCanvasElement
-  target: EntityInterface | SpritEntityInterface | TextEntityInterface
-  width?: number
-  height?: number
+  export class Camera implements CameraInterface{
+    init?(): void
+    update?(): void
+    audio?(name: string): HTMLAudioElement | null
+    getEntity?(entity: string): EntityInterface
+    getTarget(): EntityInterface | SpritEntityInterface | TextEntityInterface
+    setTarget(entity: string): void
+    canvas: HTMLCanvasElement
+    x?: number
+    y?: number
+    width?: number
+    height?: number
+    scene?: SceneInterface
+    spielEngine?: Game
+    background?: Promise<HTMLImageElement>
+  }
 }
 export class Game{
   constructor(o: OptionInterface, w?: number, h?: number)

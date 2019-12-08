@@ -14,19 +14,28 @@
         const game = new Spiel.Game({
             darkmode: false,
             pixel: true,
-            // save: true,
+            save: true,
             load: {
                 image1: Spiel.Loader.Image("./image3.png"),
                 image2: Spiel.Loader.Image("./image2.png"),
             },
+            loadScene(ctx, p){
+
+            },
             scene: [
                 {
                     name: "scene1",
+                    state: {
+                        test: "test"
+                    },
                     entity: {
-                        // "@camera": {
-                            
-                        // },
-                        image1: Spiel.ex(class extends Spiel.Entity.Image{
+                        "@camera": class extends Spiel.Entity.Camera{
+                            init(){
+                                this.background = Spiel.Loader.Image("./bg.png")
+                                this.setTarget("image2")
+                            }
+                        },
+                        image1: class extends Spiel.Entity.Image{
                             init(){
                                 this.body = {
                                     x: 2,
@@ -38,26 +47,26 @@
                                 this.y = 100
                             }
                             redraw(){
+                                if(this.key.findIndex((v) =>v === "z") !== -1) console.log(this.scene.state.test)
                                 if(this.key.findIndex((v) =>v === "a") !== -1){
+                                    this.scene.state.test = "test2"
                                     this.changeScene("scene2")
                                 }
                             }
-                        }),
-                        image2: Spiel.ex(class extends Spiel.Entity.Image{
+                        },
+                        image2: class extends Spiel.Entity.Image{
                             init(){
-                                this.x = 150
+                                this.x = 350
                                 this.y = 100
                             }
-                            beforeRedraw(){
-                                // console.log(this.collide("image1", 2))
-                            }
                             redraw(){
+                                if(this.key.findIndex((v) =>v === "e") !== -1) console.log(this.scene.state.test)
                                 if(this.key.findIndex((key) =>key === "ArrowUp") !== -1) this.y += -1
                                 if(this.key.findIndex((key) =>key === "ArrowDown") !== -1) this.y += 1
                                 if(this.key.findIndex((key) =>key === "ArrowLeft") !== -1) this.x += -1
                                 if(this.key.findIndex((key) =>key === "ArrowRight") !== -1) this.x += 1
                             }
-                        }),
+                        },
                     }
                 },
                 {
@@ -69,7 +78,6 @@
                                 this.y = 400
                             }
                             redraw(){
-                                // console.log("scene2")
                                 if(this.key.findIndex((v) =>v === "z") !== -1){
                                     this.changeScene("scene1")
                                 }
