@@ -104,6 +104,7 @@ export namespace Entity{
     beforeRedraw(): void
     on(name: "click", listener: (e: MouseEvent) =>void): void
     changeScene(name: string | number): void
+    timeout(fn: (i: number) =>void, time: number, number_step?: number): void
   }
   export class Image implements EntityInterface{
     public spielEngine: Game
@@ -123,6 +124,7 @@ export namespace Entity{
     colide(entity: string): boolean
     getEntity(entity: string): EntityInterface
     changeScene(name: string | number): void
+    timeout(fn: (i: number) =>void, time: number, number_step?: number): void
   }
   export class Sprit extends Image implements SpritEntityInterface{
     public sprit: { x: number; y: number }
