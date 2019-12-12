@@ -11,13 +11,13 @@ interface AnyEntity{
   [x: string]: EntityInterface | SpritEntityInterface | TextEntityInterface
 }
 export interface TextInterface{
-  fontSize: number
-  fontFamily: string
-  color: string
-  alpha: number
-  padding: number
-  text: string
-  title: string
+  fontSize?: number
+  fontFamily?: string
+  color?: string
+  alpha?: number
+  padding?: number
+  text?: string
+  title?: string
 }
 export type SceneEntity = AnyEntity & {
   "@camera"?: CameraInterface
@@ -85,7 +85,7 @@ export function ex(Class: new (...args: any[]) =>any, ...any: any): any
 export namespace Loader{
   export function Image(link: string): Promise<HTMLImageElement>
   export function Audio(link: string): Promise<HTMLAudioElement>
-  export function Text(text: string, style?: {fontSize?: number, fontFamily?: string}): Promise<TextInterface>
+  export function Text(text: string, style?: TextInterface): Promise<TextInterface>
 }
 export namespace Entity{
   export class Text implements TextEntityInterface{

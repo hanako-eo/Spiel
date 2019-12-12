@@ -10,6 +10,7 @@ function click(entity: SpielInterface.EntityInterface, listener){
     if((entity.x <= mouseX && (entity.x + entity.entityWidth) >= mouseX) && (entity.y <= mouseY && (entity.y + entity.entityWidth) >= mouseY)) listener(Object.assign({}, ev, {x: mouseX, y: mouseY}))
   })
 }
+const invisible = new InvisibleClass();
 const isClass = (fn) =>{
   try {
     return /^\s*class/.test(fn.toString())
@@ -50,8 +51,8 @@ export namespace Loader{
       const fontSize = "fontSize" in (style || {}) ? style.fontSize : 10
       const fontFamily = "fontFamily" in (style || {}) ? style.fontFamily : "sans-serif"
       const color = "color" in (style || {}) ? style.color : "#000"
-      const alpha = "alpha" in (style || {}) ? style.alpha : 0
-      const padding = "padding" in (style || {}) ? style.alpha : 16
+      const alpha = "alpha" in (style || {}) ? style.alpha : 1
+      const padding = "padding" in (style || {}) ? style.padding : 5
       setTimeout(() =>{
         LoaderEmitter.emit("loaded")
         wait({
@@ -175,7 +176,6 @@ export class Game{
     return JSON.stringify(o)
   }
   private setEntity(o: SpielInterface.OptionInterface, scene: SpielInterface.SceneInterface, entityName: string, l?: HTMLImageElement | HTMLAudioElement | SpielInterface.TextInterface){
-    const invisible = new InvisibleClass();
     scene.entity[entityName].scene = scene
     scene.entity[entityName].spielEngine = this
     scene.entity[entityName].canvas = this.canvas
@@ -329,7 +329,6 @@ export class Game{
         if("replaced" in this.saveObject[sceneId][entityName]) [(["", ""] as [string, string]), ...(this.saveObject[sceneId][entityName] as SpielInterface.TextEntityInterface).replaced].forEach((arr) =>{
           text = text.replace(...arr).replace(/\*[a-z0-9]+/i, (result) =>result.slice(1) in this.saveObject[sceneId][entityName] ? this.saveObject[sceneId][entityName][result.slice(1)] : result)
         })
-        this.context.save()
         this.context.font = `${o.fontSize * this.saveObject[sceneId][entityName].scale}px ${o.fontFamily}`
         this.context.globalAlpha = o.alpha
         this.context.fillStyle = o.color
@@ -340,7 +339,6 @@ export class Game{
             this.saveObject[sceneId][entityName].y + (this.camera[sceneId] === undefined ? 0 : this.camera[sceneId].y) + ((o.fontSize + o.padding) * i)
           )
         })
-        this.context.restore()
       }
     }
   }
