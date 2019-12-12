@@ -12,6 +12,6 @@ with npm. `npm i spiel-engine` (yes, spiel is already used)
 
 ## How to create a game
 with Game of course!
-````js
+```js
 new Spiel.Game()
 ```

@@ -126,7 +126,7 @@ export class Game{
   private context: CanvasRenderingContext2D
   private use: string | number
   private sceneId: number
-  private saveObject = {}
+  private saveObject: {[x: string]: SpielInterface.AnyEntity} = {}
   private load: {[x: string]: HTMLImageElement | HTMLAudioElement | SpielInterface.TextInterface} = {}
   private camera: {[x: number]: SpielInterface.CameraInterface} = {}
   private cameraBackground: {[x: number]: HTMLImageElement} = {}
@@ -265,7 +265,7 @@ export class Game{
       if("@camera" in this.saveObject[sceneId]){
         if(isClass(this.saveObject[sceneId]["@camera"])) this.saveObject[sceneId]["@camera"] = ex(this.saveObject[sceneId]["@camera"] as unknown as new () =>SpielInterface.CameraInterface)
         this.setEntity(o, this.scenes[sceneId], "@camera")
-        this.camera[sceneId] = this.saveObject[sceneId]["@camera"]
+        this.camera[sceneId] = (this.saveObject[sceneId]["@camera"] as unknown as SpielInterface.CameraInterface)
         if("init" in this.camera[sceneId]){
           this.camera[sceneId].init()
           if(o.save || ("save" in o)) this.camera[sceneId].init = () =>{}
@@ -330,7 +330,7 @@ export class Game{
           text = text.replace(...arr).replace(/\*[a-z0-9]+/i, (result) =>result.slice(1) in this.saveObject[sceneId][entityName] ? this.saveObject[sceneId][entityName][result.slice(1)] : result)
         })
         this.context.save()
-        this.context.font = `${o.fontSize}px ${o.fontFamily}`
+        this.context.font = `${o.fontSize * this.saveObject[sceneId][entityName].scale}px ${o.fontFamily}`
         this.context.globalAlpha = o.alpha
         this.context.fillStyle = o.color
         text.split("\n").forEach((text, i) =>{

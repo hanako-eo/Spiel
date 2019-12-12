@@ -20,12 +20,12 @@ export interface TextInterface{
   title: string
 }
 export type SceneEntity = AnyEntity & {
-  "@camera": CameraInterface
+  "@camera"?: CameraInterface
 }
 export interface SceneInterface{
   name: string | number
   entity: SceneEntity
-  backgroundColor: string
+  backgroundColor?: string
 }
 export interface BodyEntityInterface{
   x: number
@@ -81,7 +81,7 @@ export interface SpritEntityInterface extends EntityInterface{
 export interface TextEntityInterface extends EntityInterface{
   replaced?: Array<[string | RegExp, any]>
 }
-export function ex(Class: new (...args) =>any, ...any: any): any
+export function ex(Class: new (...args: any[]) =>any, ...any: any): any
 export namespace Loader{
   export function Image(link: string): Promise<HTMLImageElement>
   export function Audio(link: string): Promise<HTMLAudioElement>
@@ -127,7 +127,7 @@ export namespace Entity{
   export class Sprit extends Image implements SpritEntityInterface{
     public sprit: { x: number; y: number }
     public animationSpeed: number
-    animation(o: { x?: number | Array<number>; y?: number | Array<number> }, step?: (n: number) =>void)
+    animation(o: { x?: number | Array<number>; y?: number | Array<number> }, step?: (n: number) =>void): void
   }
   export class Camera implements CameraInterface{
     init?(): void
