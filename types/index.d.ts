@@ -2,7 +2,7 @@ export interface OptionInterface{
   darkmode?: boolean
   pixel?: boolean
   canvas?: HTMLCanvasElement
-  load: {[x: string]: Promise<HTMLImageElement | HTMLAudioElement | {font: string, text: string, title: string}>}
+  load: {[x: string]: Promise<HTMLImageElement | HTMLAudioElement | TextInterface>}
   scene: Array<SceneInterface>
   save?: boolean
   loadScene?(ctx: CanvasRenderingContext2D, percentage: number): void
@@ -10,12 +10,22 @@ export interface OptionInterface{
 interface AnyEntity{
   [x: string]: EntityInterface | SpritEntityInterface | TextEntityInterface
 }
+export interface TextInterface{
+  fontSize: number
+  fontFamily: string
+  color: string
+  alpha: number
+  padding: number
+  text: string
+  title: string
+}
 export type SceneEntity = AnyEntity & {
   "@camera": CameraInterface
 }
 export interface SceneInterface{
   name: string | number
   entity: SceneEntity
+  backgroundColor: string
 }
 export interface BodyEntityInterface{
   x: number
@@ -30,6 +40,7 @@ export interface CameraInterface{
   getEntity?(entity: string): EntityInterface
   getTarget(): EntityInterface | SpritEntityInterface | TextEntityInterface
   setTarget(entity: string): void
+  timeout?(fn: (i: number) =>void, time: number, number_step: number): void
   canvas: HTMLCanvasElement
   x?: number
   y?: number
@@ -49,6 +60,7 @@ export interface EntityInterface{
   getEntity?(entity: string): EntityInterface
   on?(name: "click", listener: (e: MouseEvent) =>void): void
   changeScene(name: string | number): void
+  timeout?(fn: (i: number) =>void, time: number, number_step: number): void
   scene?: SceneInterface
   spielEngine?: Game
   body?: BodyEntityInterface
@@ -73,7 +85,7 @@ export function ex(Class: new (...args) =>any, ...any: any): any
 export namespace Loader{
   export function Image(link: string): Promise<HTMLImageElement>
   export function Audio(link: string): Promise<HTMLAudioElement>
-  export function Text(text: string, style?: {fontSize?: string, fontFamily?: string}): Promise<{ font: string; text: string; title: string }>
+  export function Text(text: string, style?: {fontSize?: number, fontFamily?: string}): Promise<TextInterface>
 }
 export namespace Entity{
   export class Text implements TextEntityInterface{

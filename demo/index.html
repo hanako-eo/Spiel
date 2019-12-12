@@ -60,6 +60,7 @@
                                 this.y = 100
                             }
                             redraw(){
+                                this.timeout(console.log, 1000, 5)
                                 if(this.key.findIndex((v) =>v === "e") !== -1) console.log(this.scene.state.test)
                                 if(this.key.findIndex((key) =>key === "ArrowUp") !== -1) this.y += -1
                                 if(this.key.findIndex((key) =>key === "ArrowDown") !== -1) this.y += 1

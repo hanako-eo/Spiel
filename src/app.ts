@@ -1,7 +1,7 @@
 import { EventEmitter } from "events"
-import SpielInterface, { EntityInterface } from "./../types/index"
+import SpielInterface from "./../types/index"
+import InvisibleClass from "./InvisibleClass"
 
-// Function
 const LoaderEmitter = new EventEmitter()
 function click(entity: SpielInterface.EntityInterface, listener){
   entity.canvas.addEventListener("click", (ev) =>{
@@ -45,13 +45,24 @@ export namespace Loader{
       audio.onerror = fail
     })
   }
-  export function Text(text: string, style?: {fontSize?: string, fontFamily?: string}){
-    return new Promise<{font: string, text: string, title: string}>((wait, fail) =>{
-      const fontSize = "fontSize" in (style || {}) ? style.fontSize : "10px"
+  export function Text(text: string, style?: {fontSize?: number, fontFamily?: string, color?: string, alpha?: number, padding?: number}){
+    return new Promise<SpielInterface.TextInterface>((wait, fail) =>{
+      const fontSize = "fontSize" in (style || {}) ? style.fontSize : 10
       const fontFamily = "fontFamily" in (style || {}) ? style.fontFamily : "sans-serif"
+      const color = "color" in (style || {}) ? style.color : "#000"
+      const alpha = "alpha" in (style || {}) ? style.alpha : 0
+      const padding = "padding" in (style || {}) ? style.alpha : 16
       setTimeout(() =>{
         LoaderEmitter.emit("loaded")
-        wait({font: `${fontSize} ${fontFamily}`, text, title: "Text"})
+        wait({
+          fontSize, 
+          fontFamily,
+          color,
+          text, 
+          alpha,
+          padding,
+          title: "Text"
+        })
       }, 1)
     })
   }
@@ -114,13 +125,12 @@ export class Game{
   private canvas: HTMLCanvasElement
   private context: CanvasRenderingContext2D
   private use: string | number
-  private loop: number
   private sceneId: number
   private saveObject = {}
-  private load: {[x: string]: HTMLImageElement | HTMLAudioElement | {font: string, text: string}} = {}
+  private load: {[x: string]: HTMLImageElement | HTMLAudioElement | SpielInterface.TextInterface} = {}
   private camera: {[x: number]: SpielInterface.CameraInterface} = {}
   private cameraBackground: {[x: number]: HTMLImageElement} = {}
-  private target: {[x: number]: EntityInterface} = {}
+  private target: {[x: number]: SpielInterface.EntityInterface} = {}
   constructor(o: SpielInterface.OptionInterface, private w = 800, private h = 600){
     this.canvas = o.canvas || document.body.appendChild(document.createElement("canvas"))
     if(o.pixel) this.canvas.style.imageRendering = "pixelated"
@@ -144,7 +154,10 @@ export class Game{
     const iL = Object.keys(o.load).length
     LoaderEmitter.on("loaded", () =>{
       if(++i === iL) this.start(o)
-      else if("loadScene" in o) o.loadScene(this.context, (i / iL) * 100)
+      else if("loadScene" in o){
+        this.context.clearRect(0, 0, this.w, this.h)
+        o.loadScene(this.context, (i / iL) * 100)
+      }
     })
   }
   public createSaveJson(): string{
@@ -161,10 +174,12 @@ export class Game{
     }
     return JSON.stringify(o)
   }
-  private setEntity(o: SpielInterface.OptionInterface, scene: SpielInterface.SceneInterface, entityName: string, l?: HTMLImageElement | HTMLAudioElement | {font: string, text: string}){
+  private setEntity(o: SpielInterface.OptionInterface, scene: SpielInterface.SceneInterface, entityName: string, l?: HTMLImageElement | HTMLAudioElement | SpielInterface.TextInterface){
+    const invisible = new InvisibleClass();
     scene.entity[entityName].scene = scene
     scene.entity[entityName].spielEngine = this
     scene.entity[entityName].canvas = this.canvas
+    scene.entity[entityName].timeout = invisible.timeout()
     scene.entity[entityName].getEntity = function(entity){
       if(scene.entity[entity] instanceof Entity.Camera) throw new TypeError("You can't get the camera")
       return Object.assign({}, scene.entity[entity])
@@ -217,36 +232,6 @@ export class Game{
             this.y + this.entityHeight > scene.entity[entity].y)
         }
         if(scene.entity[entityName] instanceof Entity.Sprit){
-          class InvisibleClass{
-            private i = 0
-            private start: number
-            anim(){
-              const self = this
-              return function(this: SpielInterface.SpritEntityInterface, o: {x?: number | number[], y?: number | number[]}, step = (i: number) =>{}){
-                if(self.start === undefined) self.start = Math.trunc((Date.now() + this.animationSpeed) / 10) * 10
-                const spritP = Object.assign({}, {x: 0, y: 0}, o)
-                const arrLength = Array.isArray(spritP.x) ? spritP.x.length : Array.isArray(spritP.y) ? spritP.y.length : [0].length
-                if(!Array.isArray(spritP.x)) this.sprit.x = spritP.x
-                if(!Array.isArray(spritP.y)) this.sprit.y = spritP.y
-                const intervalFunction = () =>{
-                  if(self.start === Math.trunc((Date.now()) / 10) * 10){
-                    self.start = undefined
-                    step(self.i)
-                    if(self.i < arrLength){
-                      if(Array.isArray(spritP.x)) this.sprit.x = spritP.x[self.i]
-                      if(Array.isArray(spritP.y)) this.sprit.y = spritP.y[self.i]
-                      if(self.start === undefined){
-                        self.start = Math.trunc((Date.now() + this.animationSpeed) / 10) * 10
-                        self.i += 1
-                      }
-                    }else clearInterval((interval as unknown as number) + (self.i = 0))
-                  }
-                }
-                const interval = setInterval(intervalFunction, 10)
-              }
-            }
-          }
-          const invisible = new InvisibleClass();
           (scene.entity[entityName] as SpielInterface.SpritEntityInterface).animation = invisible.anim()
         }
       }
@@ -305,7 +290,7 @@ export class Game{
         if(this.use === this.scenes[sceneId].name) requestAnimationFrame(update)
         else if(sceneId !== -1) this.scene(o, this.sceneId)
       }
-      this.loop = requestAnimationFrame(update)
+      requestAnimationFrame(update)
     })
   }
   private drawCamera(sceneId: number){
@@ -316,6 +301,7 @@ export class Game{
     )
   }
   private draw(entityName: string, sceneId: number){
+    if(this.scenes[sceneId].backgroundColor) this.canvas.style.backgroundColor = this.scenes[sceneId].backgroundColor
     if(entityName in this.load){
       const o = this.load[entityName]
       if(o instanceof HTMLImageElement){
@@ -343,25 +329,37 @@ export class Game{
         if("replaced" in this.saveObject[sceneId][entityName]) [(["", ""] as [string, string]), ...(this.saveObject[sceneId][entityName] as SpielInterface.TextEntityInterface).replaced].forEach((arr) =>{
           text = text.replace(...arr).replace(/\*[a-z0-9]+/i, (result) =>result.slice(1) in this.saveObject[sceneId][entityName] ? this.saveObject[sceneId][entityName][result.slice(1)] : result)
         })
-        this.context.font = o.font
-        this.context.fillText(text, this.saveObject[sceneId][entityName].x + (this.camera[sceneId] === undefined ? 0 : this.camera[sceneId].x), this.saveObject[sceneId][entityName].y + (this.camera[sceneId] === undefined ? 0 : this.camera[sceneId].y))
+        this.context.save()
+        this.context.font = `${o.fontSize}px ${o.fontFamily}`
+        this.context.globalAlpha = o.alpha
+        this.context.fillStyle = o.color
+        text.split("\n").forEach((text, i) =>{
+          this.context.fillText(
+            text.trim(), 
+            this.saveObject[sceneId][entityName].x + (this.camera[sceneId] === undefined ? 0 : this.camera[sceneId].x), 
+            this.saveObject[sceneId][entityName].y + (this.camera[sceneId] === undefined ? 0 : this.camera[sceneId].y) + ((o.fontSize + o.padding) * i)
+          )
+        })
+        this.context.restore()
       }
     }
   }
   private update(sceneId: number){
     if(this.camera[sceneId] !== undefined){
-      const target = this.target[sceneId]
-      if(this.canvas.width / 2 <= target.x + target.entityWidth / 2){
-        let speed = null
-        if(this.camera[sceneId].width - (this.canvas.width / 2) <= target.x + target.entityWidth / 2 && this.camera[sceneId].x <= this.canvas.width - this.camera[sceneId].width) speed = this.canvas.width - this.camera[sceneId].width
-        else speed = (this.canvas.width / 2) - (target.x + target.entityWidth / 2)
-        this.camera[sceneId].x = Math.round(speed)
-      }
-      if(this.canvas.height / 2 <= target.y + target.entityHeight / 2){
-        let speed = null
-        if(this.camera[sceneId].height - (this.canvas.height / 2) <= target.y + target.entityHeight / 2 && this.camera[sceneId].y <= this.canvas.height - this.camera[sceneId].height) speed = this.canvas.height - this.camera[sceneId].height
-        else speed = (this.canvas.height / 2) - (target.y + target.entityHeight / 2)
-        this.camera[sceneId].y = Math.round(speed)
+      if(this.target[sceneId]){
+        const target = this.target[sceneId]
+        if(this.canvas.width / 2 <= target.x + target.entityWidth / 2){
+          let speed = null
+          if(this.camera[sceneId].width - (this.canvas.width / 2) <= target.x + target.entityWidth / 2 && this.camera[sceneId].x <= this.canvas.width - this.camera[sceneId].width) speed = this.canvas.width - this.camera[sceneId].width
+          else speed = (this.canvas.width / 2) - (target.x + target.entityWidth / 2)
+          this.camera[sceneId].x = Math.round(speed)
+        }
+        if(this.canvas.height / 2 <= target.y + target.entityHeight / 2){
+          let speed = null
+          if(this.camera[sceneId].height - (this.canvas.height / 2) <= target.y + target.entityHeight / 2 && this.camera[sceneId].y <= this.canvas.height - this.camera[sceneId].height) speed = this.canvas.height - this.camera[sceneId].height
+          else speed = (this.canvas.height / 2) - (target.y + target.entityHeight / 2)
+          this.camera[sceneId].y = Math.round(speed)
+        }
       }
       this.drawCamera(sceneId)
       this.camera[sceneId].update()
