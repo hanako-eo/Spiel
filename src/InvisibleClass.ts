@@ -13,7 +13,7 @@ export default class InvisibleClass {
       if(!Array.isArray(spritP.x)) this.sprit.x = spritP.x
       if(!Array.isArray(spritP.y)) this.sprit.y = spritP.y
       const intervalFunction = () =>{
-        if(self.startAnim === Math.trunc((Date.now()) / 10) * 10){
+        if(self.startAnim <= Math.trunc((Date.now()) / 10) * 10){
           self.startAnim = undefined
           step(self.i)
           if(self.i < arrLength){

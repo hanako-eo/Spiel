@@ -8,7 +8,7 @@ export interface OptionInterface{
   loadScene?(ctx: CanvasRenderingContext2D, percentage: number): void
 }
 interface AnyEntity{
-  [x: string]: EntityInterface | SpritEntityInterface | TextEntityInterface
+  [x: string]: EntityInterface | SpritEntityInterface | TextEntityInterface | any
 }
 export interface TextInterface{
   fontSize?: number
@@ -36,7 +36,7 @@ export interface BodyEntityInterface{
 export interface CameraInterface{
   init?(): void
   update?(): void
-  audio?(name: string): HTMLAudioElement | null
+  audio?(name: string): HTMLAudioElement
   getEntity?(entity: string): EntityInterface
   getTarget(): EntityInterface | SpritEntityInterface | TextEntityInterface
   setTarget(entity: string): void
@@ -55,7 +55,7 @@ export interface EntityInterface{
   beforeRedraw?(): void
   redraw?(): void
   afterRedraw?(): void
-  audio?(name: string): HTMLAudioElement | null
+  audio?(name: string): HTMLAudioElement
   collide?(entity: string, border: number | null): boolean
   getEntity?(entity: string): EntityInterface
   on?(name: "click", listener: (e: MouseEvent) =>void): void
@@ -88,24 +88,6 @@ export namespace Loader{
   export function Text(text: string, style?: TextInterface): Promise<TextInterface>
 }
 export namespace Entity{
-  export class Text implements TextEntityInterface{
-    public spielEngine: Game
-    public key?: string[]
-    public entityWidth?: number
-    public entityHeight?: number
-    public scale?: number
-    public canvas: HTMLCanvasElement
-    public x: number
-    public y: number
-    public replaced: Array<[string | RegExp, any]>
-    init(): void
-    afterRedraw(): void
-    redraw(): void
-    beforeRedraw(): void
-    on(name: "click", listener: (e: MouseEvent) =>void): void
-    changeScene(name: string | number): void
-    timeout(fn: (i: number) =>void, time: number, number_step?: number): void
-  }
   export class Image implements EntityInterface{
     public spielEngine: Game
     public scale: number
@@ -125,6 +107,9 @@ export namespace Entity{
     getEntity(entity: string): EntityInterface
     changeScene(name: string | number): void
     timeout(fn: (i: number) =>void, time: number, number_step?: number): void
+  }
+  export class Text extends Image implements TextEntityInterface{
+    public replaced: Array<[string | RegExp, any]>
   }
   export class Sprit extends Image implements SpritEntityInterface{
     public sprit: { x: number; y: number }

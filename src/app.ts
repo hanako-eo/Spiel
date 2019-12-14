@@ -126,6 +126,7 @@ export class Game{
   private canvas: HTMLCanvasElement
   private context: CanvasRenderingContext2D
   private use: string | number
+  private audio: {[x: string]: HTMLAudioElement} = {}
   private sceneId: number
   private saveObject: {[x: string]: SpielInterface.AnyEntity} = {}
   private load: {[x: string]: HTMLImageElement | HTMLAudioElement | SpielInterface.TextInterface} = {}
@@ -143,7 +144,8 @@ export class Game{
     this.sceneId = 0
     this.use = this.scenes[this.sceneId].name
     for(const entityName in o.load) o.load[entityName].then((l) =>{
-      this.load[entityName] = l
+      if(l instanceof HTMLAudioElement) this.audio[entityName] = l
+      else this.load[entityName] = l
       this.scenes.forEach((scene) =>{
         if(entityName in scene.entity){
           if(isClass(scene.entity[entityName])) scene.entity[entityName] = ex(scene.entity[entityName] as unknown as new () =>SpielInterface.EntityInterface)
@@ -157,7 +159,7 @@ export class Game{
       if(++i === iL) this.start(o)
       else if("loadScene" in o){
         this.context.clearRect(0, 0, this.w, this.h)
-        o.loadScene(this.context, (i / iL) * 100)
+        o.loadScene(this.context, Math.round(i / iL) * 100)
       }
     })
   }
@@ -186,17 +188,14 @@ export class Game{
     }
     scene.entity[entityName].audio = (name) =>{
       if(!(name in o.load)) throw new ReferenceError(`${name} is not loaded or defined with this name`)
-      if(name in this.load){
-        if((this.load[name] as HTMLAudioElement).title !== "Audio") throw new TypeError(`${name} is not Audio Element`)
-        return this.load[name] as HTMLAudioElement
-      }
-      return document.createElement("audio")
+      if(name in this.audio) return this.audio[name]
+      throw new TypeError(`${name} is not Audio Element`)
     }
     if(!(scene.entity[entityName] instanceof Entity.Camera) && entityName !== "@camera"){
       scene.entity[entityName].changeScene = (name) =>{
         this.sceneId = this.scenes.findIndex((scene) =>scene.name === name)
         if(this.sceneId !== -1){
-          if(!(this.sceneId in this.saveObject))this.saveObject[this.sceneId] = this.scenes[this.sceneId].entity
+          if(!(this.sceneId in this.saveObject)) this.saveObject[this.sceneId] = this.scenes[this.sceneId].entity
           this.use = this.scenes[this.sceneId].name
         }
       }
