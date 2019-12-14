@@ -77,6 +77,7 @@ export namespace Entity{
     public spielEngine: Game
     public scene: SpielInterface.SceneInterface
     public hidden = false
+    public fixed = false
     public canvas: HTMLCanvasElement
     public x: number
     public y: number
@@ -128,7 +129,7 @@ export class Game{
   private use: string | number
   private audio: {[x: string]: HTMLAudioElement} = {}
   private sceneId: number
-  private saveObject: {[x: string]: SpielInterface.AnyEntity} = {}
+  private saveObject: {[x: string]: SpielInterface.SceneEntity} = {}
   private load: {[x: string]: HTMLImageElement | HTMLAudioElement | SpielInterface.TextInterface} = {}
   private camera: {[x: number]: SpielInterface.CameraInterface} = {}
   private cameraBackground: {[x: number]: HTMLImageElement} = {}
@@ -310,15 +311,15 @@ export class Game{
           (this.saveObject[sceneId][entityName].entityHeight * (this.saveObject[sceneId][entityName] as SpielInterface.SpritEntityInterface).sprit.y),
           this.saveObject[sceneId][entityName].entityWidth,
           this.saveObject[sceneId][entityName].entityHeight,
-          this.saveObject[sceneId][entityName].x + (this.camera[sceneId] === undefined ? 0 : this.camera[sceneId].x),
-          this.saveObject[sceneId][entityName].y + (this.camera[sceneId] === undefined ? 0 : this.camera[sceneId].y),
+          this.saveObject[sceneId][entityName].x + (this.camera[sceneId] === undefined || this.saveObject[sceneId][entityName].fixed ? 0 : this.camera[sceneId].x),
+          this.saveObject[sceneId][entityName].y + (this.camera[sceneId] === undefined || this.saveObject[sceneId][entityName].fixed ? 0 : this.camera[sceneId].y),
           this.saveObject[sceneId][entityName].entityWidth * this.saveObject[sceneId][entityName].scale,
           this.saveObject[sceneId][entityName].entityHeight * this.saveObject[sceneId][entityName].scale
         ) 
         else this.context.drawImage(
           o, 
-          this.saveObject[sceneId][entityName].x + (this.camera[sceneId] === undefined ? 0 : this.camera[sceneId].x), 
-          this.saveObject[sceneId][entityName].y + (this.camera[sceneId] === undefined ? 0 : this.camera[sceneId].y),
+          this.saveObject[sceneId][entityName].x + (this.camera[sceneId] === undefined || this.saveObject[sceneId][entityName].fixed ? 0 : this.camera[sceneId].x), 
+          this.saveObject[sceneId][entityName].y + (this.camera[sceneId] === undefined || this.saveObject[sceneId][entityName].fixed ? 0 : this.camera[sceneId].y),
           this.saveObject[sceneId][entityName].entityWidth * this.saveObject[sceneId][entityName].scale,
           this.saveObject[sceneId][entityName].entityHeight * this.saveObject[sceneId][entityName].scale
         )
@@ -334,8 +335,8 @@ export class Game{
         text.split("\n").forEach((text, i) =>{
           this.context.fillText(
             text.trim(), 
-            this.saveObject[sceneId][entityName].x + (this.camera[sceneId] === undefined ? 0 : this.camera[sceneId].x), 
-            this.saveObject[sceneId][entityName].y + (this.camera[sceneId] === undefined ? 0 : this.camera[sceneId].y) + ((o.fontSize + o.padding) * i)
+            this.saveObject[sceneId][entityName].x + (this.camera[sceneId] === undefined || this.saveObject[sceneId][entityName].fixed ? 0 : this.camera[sceneId].x), 
+            this.saveObject[sceneId][entityName].y + (this.camera[sceneId] === undefined || this.saveObject[sceneId][entityName].fixed ? 0 : this.camera[sceneId].y) + ((o.fontSize + o.padding) * i)
           )
         })
       }

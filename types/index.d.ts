@@ -61,6 +61,7 @@ export interface EntityInterface{
   on?(name: "click", listener: (e: MouseEvent) =>void): void
   changeScene(name: string | number): void
   timeout?(fn: (i: number) =>void, time: number, number_step: number): void
+  fixed?: boolean
   scene?: SceneInterface
   spielEngine?: Game
   body?: BodyEntityInterface
@@ -85,10 +86,11 @@ export function ex(Class: new (...args: any[]) =>any, ...any: any): any
 export namespace Loader{
   export function Image(link: string): Promise<HTMLImageElement>
   export function Audio(link: string): Promise<HTMLAudioElement>
-  export function Text(text: string, style?: TextInterface): Promise<TextInterface>
+  export function Text(text: string, style?: {fontSize?: number, fontFamily?: string, color?: string, alpha?: number, padding?: number}): Promise<TextInterface>
 }
 export namespace Entity{
   export class Image implements EntityInterface{
+    public fixed: boolean
     public spielEngine: Game
     public scale: number
     public canvas: HTMLCanvasElement
