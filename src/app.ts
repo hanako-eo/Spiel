@@ -1,4 +1,4 @@
-import { EventEmitter } from "events"
+import EventEmitter from "./EventEmitter"
 import SpielInterface from "./../types/index"
 import InvisibleClass from "./InvisibleClass"
 
@@ -157,11 +157,9 @@ export class Game{
     let i = 0
     const iL = Object.keys(o.load).length
     LoaderEmitter.on("loaded", () =>{
+      this.context.clearRect(0, 0, this.w, this.h)
       if(++i === iL) this.start(o)
-      else if("loadScene" in o){
-        this.context.clearRect(0, 0, this.w, this.h)
-        o.loadScene(this.context, Math.round(i / iL) * 100)
-      }
+      else if("loadScene" in o) o.loadScene(this.context, Math.round(i / iL) * 100)
     })
   }
   public createSaveJson(): string{
