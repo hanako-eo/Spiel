@@ -81,6 +81,16 @@ export interface SpritEntityInterface extends EntityInterface{
 }
 export interface TextEntityInterface extends EntityInterface{
   replaced?: Array<[string | RegExp, any]>
+  setFontSize(v: number): void
+  setFontFamily(v: string): void
+  setColor(v: string): void
+  setAlpha(v: number): void
+  setPadding(v: number): void
+  getFontSize(): number
+  getFontFamily(): string
+  getColor(): string
+  getAlpha(): number
+  getPadding(): number
 }
 export function ex(Class: new (...args: any[]) =>any, ...any: any): any
 export namespace Loader{
@@ -105,13 +115,23 @@ export namespace Entity{
     beforeRedraw(): void
     on(name: "click", listener: (e: MouseEvent) =>void): void
     audio(name: string): HTMLAudioElement
-    colide(entity: string): boolean
+    collide(entity: string): boolean
     getEntity(entity: string): EntityInterface
     changeScene(name: string | number): void
     timeout(fn: (i: number) =>void, time: number, number_step?: number): void
   }
   export class Text extends Image implements TextEntityInterface{
     public replaced: Array<[string | RegExp, any]>
+    setFontSize(v: number): void
+    setFontFamily(v: string): void
+    setColor(v: string): void
+    setAlpha(v: number): void
+    setPadding(v: number): void
+    getFontSize(): number
+    getFontFamily(): string
+    getColor(): string
+    getAlpha(): number
+    getPadding(): number
   }
   export class Sprit extends Image implements SpritEntityInterface{
     public sprit: { x: number; y: number }

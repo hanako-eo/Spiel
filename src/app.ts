@@ -3,14 +3,16 @@ import SpielInterface from "./../types/index"
 import InvisibleClass from "./InvisibleClass"
 
 const LoaderEmitter = new EventEmitter()
+const isWeb = () =>!!fetch && !!window
 function click(entity: SpielInterface.EntityInterface, listener){
-  entity.canvas.addEventListener("click", (ev) =>{
-    const mouseX = Math.abs(entity.canvas.offsetLeft - ev.x)
-    const mouseY = Math.abs(entity.canvas.offsetTop - ev.y)
-    if((entity.x <= mouseX && (entity.x + entity.entityWidth) >= mouseX) && (entity.y <= mouseY && (entity.y + entity.entityWidth) >= mouseY)) listener(Object.assign({}, ev, {x: mouseX, y: mouseY}))
-  })
+  if(isWeb()){
+    (entity.canvas as HTMLCanvasElement).addEventListener("click", (ev) =>{
+      const mouseX = Math.abs((entity.canvas as HTMLCanvasElement).offsetLeft - ev.x)
+      const mouseY = Math.abs((entity.canvas as HTMLCanvasElement).offsetTop - ev.y)
+      if((entity.x <= mouseX && (entity.x + entity.entityWidth) >= mouseX) && (entity.y <= mouseY && (entity.y + entity.entityWidth) >= mouseY)) listener(Object.assign({}, ev, {x: mouseX, y: mouseY}))
+    })
+  }
 }
-const invisible = new InvisibleClass();
 const isClass = (fn) =>{
   try {
     return /^\s*class/.test(fn.toString())
@@ -18,12 +20,13 @@ const isClass = (fn) =>{
     return false
   }
 }
+console.log(isWeb())
 export function ex(Class: new (args: any) =>any, ...args: any): any{
   return new Class(args)
 }
 export namespace Loader{
   export function Image(link: string){
-    return new Promise<HTMLImageElement>((wait, fail) =>{
+    if(isWeb()) return new Promise<HTMLImageElement>((wait, fail) =>{
       const img = document.createElement("img")
       img.title = "Image"
       img.src = link
@@ -98,6 +101,16 @@ export namespace Entity{
   }
   export class Text extends Image implements SpielInterface.TextEntityInterface{
     public replaced: Array<[string | RegExp, any]> = []
+    setFontSize(v: number){}
+    setFontFamily(v: string){}
+    setColor(v: string){}
+    setAlpha(v: number){}
+    setPadding(v: number){}
+    getFontSize(): number{return 0}
+    getFontFamily(): string{return ""}
+    getColor(): string{return ""}
+    getAlpha(): number{return 0}
+    getPadding(): number{return 0}
   }
   export class Sprit extends Image implements SpielInterface.SpritEntityInterface{
     public sprit = {x: 0, y: 0}
@@ -135,13 +148,19 @@ export class Game{
   private cameraBackground: {[x: number]: HTMLImageElement} = {}
   private target: {[x: number]: SpielInterface.EntityInterface} = {}
   constructor(o: SpielInterface.OptionInterface, private w = 800, private h = 600){
-    this.canvas = o.canvas || document.body.appendChild(document.createElement("canvas"))
-    if(o.pixel) this.canvas.style.imageRendering = "pixelated"
-    if(o.darkmode || !("darkmode" in o)) this.canvas.style.backgroundColor = "#000"
-    this.context = this.canvas.getContext("2d")
-    this.scenes = o.scene
+    this.canvas = o.canvas ? o.canvas : document.body.appendChild(document.createElement("canvas"))
     this.canvas.height = this.h
     this.canvas.width = this.w
+    this.context = this.canvas.getContext("2d")
+    if(o.pixel) this.canvas.style.imageRendering = "pixelated"
+    if(o.darkmode || !("darkmode" in o)){
+      this.context.save()
+      this.context.fillStyle = "#000"
+      this.context.rect(0, 0, this.w, this.h)
+      this.context.fill()
+      this.context.restore()
+    }
+    this.scenes = o.scene
     this.sceneId = 0
     this.use = this.scenes[this.sceneId].name
     for(const entityName in o.load) o.load[entityName].then((l) =>{
@@ -177,21 +196,25 @@ export class Game{
     return JSON.stringify(o)
   }
   private setEntity(o: SpielInterface.OptionInterface, scene: SpielInterface.SceneInterface, entityName: string, l?: HTMLImageElement | HTMLAudioElement | SpielInterface.TextInterface){
-    scene.entity[entityName].scene = scene
-    scene.entity[entityName].spielEngine = this
-    scene.entity[entityName].canvas = this.canvas
-    scene.entity[entityName].timeout = invisible.timeout()
-    scene.entity[entityName].getEntity = function(entity){
+    const invisible = new InvisibleClass();
+    const entity = scene.entity[entityName]
+    if(entity.x === undefined) entity.x = 0
+    if(entity.y === undefined) entity.y = 0
+    entity.scene = scene
+    entity.spielEngine = this
+    entity.canvas = this.canvas
+    entity.timeout = invisible.timeout()
+    entity.getEntity = function(entity){
       if(scene.entity[entity] instanceof Entity.Camera) throw new TypeError("You can't get the camera")
       return Object.assign({}, scene.entity[entity])
     }
-    scene.entity[entityName].audio = (name) =>{
+    entity.audio = (name) =>{
       if(!(name in o.load)) throw new ReferenceError(`${name} is not loaded or defined with this name`)
       if(name in this.audio) return this.audio[name]
       throw new TypeError(`${name} is not Audio Element`)
     }
-    if(!(scene.entity[entityName] instanceof Entity.Camera) && entityName !== "@camera"){
-      scene.entity[entityName].changeScene = (name) =>{
+    if(!(entity instanceof Entity.Camera) && entityName !== "@camera"){
+      entity.changeScene = (name) =>{
         this.sceneId = this.scenes.findIndex((scene) =>scene.name === name)
         if(this.sceneId !== -1){
           if(!(this.sceneId in this.saveObject)) this.saveObject[this.sceneId] = this.scenes[this.sceneId].entity
@@ -199,9 +222,9 @@ export class Game{
         }
       }
       if(l instanceof HTMLImageElement){
-        if(scene.entity[entityName].entityWidth === undefined) scene.entity[entityName].entityWidth = l.width
-        if(scene.entity[entityName].entityHeight === undefined) scene.entity[entityName].entityHeight = l.height
-        scene.entity[entityName].collide = function(this: SpielInterface.EntityInterface, entity, border = null){
+        if(entity.entityWidth === undefined) entity.entityWidth = l.width
+        if(entity.entityHeight === undefined) entity.entityHeight = l.height
+        entity.collide = function(this: SpielInterface.EntityInterface, entity, border = null){
           if(border === null){
             if(scene.entity[entity].body === null) return this.x < scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) &&
               this.x + this.entityWidth > scene.entity[entity].x &&
@@ -229,15 +252,26 @@ export class Game{
             this.y < scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) &&
             this.y + this.entityHeight > scene.entity[entity].y)
         }
-        if(scene.entity[entityName] instanceof Entity.Sprit){
-          (scene.entity[entityName] as SpielInterface.SpritEntityInterface).animation = invisible.anim()
+        if(entity instanceof Entity.Sprit){
+          (entity as SpielInterface.SpritEntityInterface).animation = invisible.anim()
         }
+      }else{
+        entity.setFontSize = (v: number) =>{(l as SpielInterface.TextInterface).fontSize = v}
+        entity.setFontFamily = (v: string) =>{(l as SpielInterface.TextInterface).fontFamily = v}
+        entity.setColor = (v: string) =>{(l as SpielInterface.TextInterface).color = v}
+        entity.setAlpha = (v: number) =>{(l as SpielInterface.TextInterface).alpha = v}
+        entity.setPadding = (v: number) =>{(l as SpielInterface.TextInterface).padding = v}
+        entity.getFontSize = () =>(l as SpielInterface.TextInterface).fontSize
+        entity.getFontFamily = () =>(l as SpielInterface.TextInterface).fontFamily
+        entity.getColor = () =>(l as SpielInterface.TextInterface).color
+        entity.getAlpha = () =>(l as SpielInterface.TextInterface).alpha
+        entity.getPadding = () =>(l as SpielInterface.TextInterface).padding
       }
-    }else if(scene.entity[entityName] instanceof Entity.Camera && entityName === "@camera"){
-      scene.entity[entityName].getTarget = () =>{
+    }else if(entity instanceof Entity.Camera && entityName === "@camera"){
+      entity.getTarget = () =>{
         return this.target[this.sceneId]
       }
-      scene.entity[entityName].setTarget = (entity) =>{
+      entity.setTarget = (entity) =>{
         if(scene.entity[entity] instanceof Entity.Camera) throw new TypeError("You can't target the camera")
         this.target[this.sceneId] = scene.entity[entity]
       }
@@ -299,7 +333,6 @@ export class Game{
     )
   }
   private draw(entityName: string, sceneId: number){
-    if(this.scenes[sceneId].backgroundColor) this.canvas.style.backgroundColor = this.scenes[sceneId].backgroundColor
     if(entityName in this.load){
       const o = this.load[entityName]
       if(o instanceof HTMLImageElement){
@@ -341,6 +374,13 @@ export class Game{
     }
   }
   private update(sceneId: number){
+    if(this.scenes[sceneId].backgroundColor){
+      this.context.save()
+      this.context.fillStyle = this.scenes[sceneId].backgroundColor
+      this.context.rect(0, 0, this.w, this.h)
+      this.context.fill()
+      this.context.restore()
+    }
     if(this.camera[sceneId] !== undefined){
       if(this.target[sceneId]){
         const target = this.target[sceneId]
