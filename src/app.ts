@@ -3,15 +3,12 @@ import SpielInterface from "./../types/index"
 import InvisibleClass from "./InvisibleClass"
 
 const LoaderEmitter = new EventEmitter()
-const isWeb = () =>!!fetch && !!window
 function click(entity: SpielInterface.EntityInterface, listener){
-  if(isWeb()){
-    (entity.canvas as HTMLCanvasElement).addEventListener("click", (ev) =>{
-      const mouseX = Math.abs((entity.canvas as HTMLCanvasElement).offsetLeft - ev.x)
-      const mouseY = Math.abs((entity.canvas as HTMLCanvasElement).offsetTop - ev.y)
-      if((entity.x <= mouseX && (entity.x + entity.entityWidth) >= mouseX) && (entity.y <= mouseY && (entity.y + entity.entityWidth) >= mouseY)) listener(Object.assign({}, ev, {x: mouseX, y: mouseY}))
-    })
-  }
+  entity.canvas.addEventListener("click", (ev) =>{
+    const mouseX = Math.abs(entity.canvas.offsetLeft - ev.x)
+    const mouseY = Math.abs(entity.canvas.offsetTop - ev.y)
+    if((entity.x <= mouseX && (entity.x + entity.entityWidth) >= mouseX) && (entity.y <= mouseY && (entity.y + entity.entityWidth) >= mouseY)) listener(Object.assign({}, ev, {x: mouseX, y: mouseY}))
+  })
 }
 const isClass = (fn) =>{
   try {
@@ -20,13 +17,12 @@ const isClass = (fn) =>{
     return false
   }
 }
-console.log(isWeb())
 export function ex(Class: new (args: any) =>any, ...args: any): any{
   return new Class(args)
 }
 export namespace Loader{
   export function Image(link: string){
-    if(isWeb()) return new Promise<HTMLImageElement>((wait, fail) =>{
+    return new Promise<HTMLImageElement>((wait, fail) =>{
       const img = document.createElement("img")
       img.title = "Image"
       img.src = link
