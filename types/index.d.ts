@@ -58,7 +58,6 @@ export interface EntityInterface{
   audio?(name: string): HTMLAudioElement
   collide?(entity: string, border: number | null): boolean
   getEntity?(entity: string): EntityInterface
-  on?(name: "click", listener: (e: MouseEvent) =>void): void
   changeScene(name: string | number): void
   timeout?(fn: (i: number) =>void, time: number, number_step: number): void
   fixed?: boolean
@@ -113,7 +112,6 @@ export namespace Entity{
     afterRedraw(): void
     redraw(): void
     beforeRedraw(): void
-    on(name: "click", listener: (e: MouseEvent) =>void): void
     audio(name: string): HTMLAudioElement
     collide(entity: string): boolean
     getEntity(entity: string): EntityInterface

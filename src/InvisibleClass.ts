@@ -3,7 +3,6 @@ import SpielInterface from "./../types/index"
 export default class InvisibleClass {
   private i = 0
   private startAnim: number
-  private startOut: number
   anim(){
     const self = this
     return function(this: SpielInterface.SpritEntityInterface, o: {x?: number | number[], y?: number | number[]}, step = (i: number) =>{}){
@@ -24,24 +23,6 @@ export default class InvisibleClass {
               self.i += 1
             }
           } else clearInterval((interval as unknown as number) + (self.i = 0))
-        }
-      }
-      const interval = setInterval(intervalFunction, 10)
-    }
-  }
-  timeout(){
-    const self = this
-    return function(fn = (i: number) =>{}, time: number, n: number = 1){
-      if (self.startOut === undefined) self.startOut = Math.trunc((Date.now() + time) / 10) * 10
-      const intervalFunction = () =>{
-        if(self.startOut <= Math.trunc((Date.now()) / 10) * 10){
-          self.startOut = undefined
-          fn(self.i)
-          if(++self.i < n){
-            if(self.startOut === undefined){
-              self.startOut = Math.trunc((Date.now() + time) / 10) * 10
-            }
-          }else clearInterval((interval as unknown as number) + (self.i = 0))
         }
       }
       const interval = setInterval(intervalFunction, 10)
