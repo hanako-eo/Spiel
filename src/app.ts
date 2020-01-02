@@ -164,13 +164,6 @@ export class Game{
     this.canvas.width = this.w
     this.context = this.canvas.getContext("2d")
     if(o.pixel) this.canvas.style.imageRendering = "pixelated"
-    if(o.darkmode || !("darkmode" in o)){
-      this.context.save()
-      this.context.fillStyle = "#000"
-      this.context.rect(0, 0, this.w, this.h)
-      this.context.fill()
-      this.context.restore()
-    }
     this.scenes = o.scene
     this.sceneId = 0
     this.use = this.scenes[this.sceneId].name
@@ -328,7 +321,7 @@ export class Game{
       }
       const update = () =>{
         this.context.clearRect(0, 0, this.w, this.h)
-        this.update(sceneId)
+        this.update(o, sceneId)
         if(this.use === this.scenes[sceneId].name) requestAnimationFrame(update)
         else if(sceneId !== -1) this.scene(o, this.sceneId)
       }
@@ -383,10 +376,10 @@ export class Game{
       }
     }
   }
-  private update(sceneId: number){
-    if(this.scenes[sceneId].backgroundColor){
+  private update(o: SpielInterface.OptionInterface, sceneId: number){
+    if(this.scenes[sceneId].backgroundColor || o.darkmode || !("darkmode" in o)){
       this.context.save()
-      this.context.fillStyle = this.scenes[sceneId].backgroundColor
+      this.context.fillStyle = this.scenes[sceneId].backgroundColor ? this.scenes[sceneId].backgroundColor : "#000"
       this.context.rect(0, 0, this.w, this.h)
       this.context.fill()
       this.context.restore()

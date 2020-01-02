@@ -32,7 +32,7 @@ var BB = ((B.toString(16).length==1)?"0"+B.toString(16):B.toString(16));
 return "#"+RR+GG+BB;
 }
         const game = new Spiel.Game({
-            darkmode: false,
+            darkmode: true,
             pixel: true,
             save: true,
             load: {
@@ -45,6 +45,7 @@ return "#"+RR+GG+BB;
             },
             scene: [
                 {
+                    
                     name: "scene1",
                     state: {
                         test: "test"
@@ -97,7 +98,7 @@ return "#"+RR+GG+BB;
                         },
                     }
                 },
-                {
+                {backgroundColor: "#0ff",
                     name: "scene2",
                     entity: {
                         image1: Spiel.ex(class extends Spiel.Entity.Image{
