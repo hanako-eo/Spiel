@@ -41,6 +41,7 @@ export interface CameraInterface{
   getTarget(): EntityInterface | SpritEntityInterface | TextEntityInterface
   setTarget(entity: string): void
   timeout?(fn: (i: number) =>void, time: number, number_step: number): void
+  tick?(fn: () =>void, tick: number): void
   canvas: HTMLCanvasElement
   x?: number
   y?: number
@@ -60,6 +61,7 @@ export interface EntityInterface{
   getEntity?(entity: string): EntityInterface
   changeScene(name: string | number): void
   timeout?(fn: (i: number) =>void, time: number, number_step: number): void
+  tick?(fn: () =>void, tick: number): void
   fixed?: boolean
   scene?: SceneInterface
   spielEngine?: Game

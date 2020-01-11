@@ -69,6 +69,8 @@ return "#"+RR+GG+BB;
                                 this.y = 100
                             }
                             redraw(){
+                                this.timeout(console.log, 500, 5)
+                                this.timeout(console.info, 500, 5)
                                 if(this.key.findIndex((v) =>v === "z") !== -1) console.log(this.scene.state.test)
                                 if(this.key.findIndex((v) =>v === "a") !== -1){
                                     this.scene.state.test = "test2"

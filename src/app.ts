@@ -3,25 +3,6 @@ import SpielInterface from "./../types/index"
 import InvisibleClass from "./InvisibleClass"
 
 const LoaderEmitter = new EventEmitter()
-function timeout(fn, time, n){
-  const self = {
-    startOut: undefined, 
-    i: 0
-  }
-  if (self.startOut === undefined) self.startOut = Math.trunc((Date.now() + time))
-  const intervalFunction = () =>{
-    if(self.startOut <= Math.trunc((Date.now()))){
-      self.startOut = undefined
-      fn(self.i)
-      if(++self.i < n){
-        if(self.startOut === undefined){
-          self.startOut = Math.trunc((Date.now() + time))
-        }
-      }else clearInterval((interval as unknown as number))
-    }
-  }
-  const interval = setInterval(intervalFunction, 1)
-}
 const isClass = (fn) =>{
   try {
     return /^\s*class/.test(fn.toString())
@@ -99,9 +80,8 @@ export namespace Entity{
     afterRedraw(){}
     redraw(){}
     beforeRedraw(){}
-    timeout(fn = (i: number) =>{}, time: number, n: number = 1){
-      return timeout(fn, time, n)
-    }
+    tick(fn: () =>void, tick: number): void{}
+    timeout(fn: (i: number) =>void, time: number, n?: number){}
     changeScene(name: string | number){}
     audio(name: string): HTMLAudioElement{ return document.createElement("audio") }
     collide(entity: string, border: number | null): boolean{ return false }
@@ -136,9 +116,8 @@ export namespace Entity{
     public background: Promise<HTMLImageElement>
     init(){}
     update(){}
-    timeout(fn = (i: number) =>{}, time: number, n: number = 1){
-      return timeout(fn, time, n)
-    }
+    tick(fn: () =>void, tick: number): void{}
+    timeout(fn: (i: number) =>void, time: number, n?: number){}
     audio(name: string): HTMLAudioElement{ return document.createElement("audio") }
     getEntity(entity: string): SpielInterface.EntityInterface{ return Object.assign({}, (this as unknown as SpielInterface.EntityInterface)) }
     getTarget(): SpielInterface.EntityInterface{ return Object.assign({}, (this as unknown as SpielInterface.EntityInterface)) }
@@ -207,6 +186,8 @@ export class Game{
     entity.scene = scene
     entity.spielEngine = this
     entity.canvas = this.canvas
+    entity.timeout = invisible.timeout()
+    entity.tick = invisible.tick
     entity.getEntity = function(entity){
       if(scene.entity[entity] instanceof Entity.Camera) throw new TypeError("You can't get the camera")
       return Object.assign({}, scene.entity[entity])
