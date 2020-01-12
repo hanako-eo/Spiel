@@ -1,6 +1,6 @@
 {
   "name": "spiel-engine",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "spiel (in German it's game) is a game engine",
   "main": "lib/spiel.js",
   "typings": "types/index.d.ts",
@@ -45,7 +45,5 @@
     "url": "https://github.com/ashikuri/Spiel/issues"
   },
   "homepage": "https://github.com/ashikuri/Spiel#readme",
-  "dependencies": {
-    "uniqid": "^5.2.0"
-  }
+  "dependencies": {}
 }

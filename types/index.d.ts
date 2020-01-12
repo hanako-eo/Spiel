@@ -6,6 +6,7 @@ export interface OptionInterface{
   scene: Array<SceneInterface>
   save?: boolean
   loadScene?(ctx: CanvasRenderingContext2D, percentage: number): void
+  state?: {}
 }
 interface AnyEntity{
   [x: string]: EntityInterface | SpritEntityInterface | TextEntityInterface | any
@@ -48,7 +49,7 @@ export interface CameraInterface{
   width?: number
   height?: number
   scene?: SceneInterface
-  spielEngine?: Game
+  game?: Game
   background?: Promise<HTMLImageElement>
 }
 export interface EntityInterface{
@@ -62,9 +63,11 @@ export interface EntityInterface{
   changeScene(name: string | number): void
   timeout?(fn: (i: number) =>void, time: number, number_step: number): void
   tick?(fn: () =>void, tick: number): void
+  use: string
+  index: number
   fixed?: boolean
   scene?: SceneInterface
-  spielEngine?: Game
+  game?: Game
   body?: BodyEntityInterface
   hidden?: boolean
   key?: Array<string>
@@ -101,6 +104,8 @@ export namespace Loader{
 }
 export namespace Entity{
   export class Image implements EntityInterface{
+    public use: string
+    public index: number
     public fixed: boolean
     public spielEngine: Game
     public scale: number
@@ -119,6 +124,7 @@ export namespace Entity{
     getEntity(entity: string): EntityInterface
     changeScene(name: string | number): void
     timeout(fn: (i: number) =>void, time: number, number_step?: number): void
+    tick(fn: () =>void, tick: number): void
   }
   export class Text extends Image implements TextEntityInterface{
     public replaced: Array<[string | RegExp, any]>
@@ -141,21 +147,25 @@ export namespace Entity{
   export class Camera implements CameraInterface{
     init?(): void
     update?(): void
-    audio?(name: string): HTMLAudioElement | null
+    audio?(name: string): HTMLAudioElement
     getEntity?(entity: string): EntityInterface
     getTarget(): EntityInterface | SpritEntityInterface | TextEntityInterface
     setTarget(entity: string): void
+    timeout?(fn: (i: number) =>void, time: number, number_step: number): void
+    tick?(fn: () =>void, tick: number): void
     canvas: HTMLCanvasElement
     x?: number
     y?: number
     width?: number
     height?: number
     scene?: SceneInterface
-    spielEngine?: Game
+    game?: Game
     background?: Promise<HTMLImageElement>
   }
 }
-export class Game{
+export class Game<StateValue = {}>{
+  public fps: number
+  public state: StateValue
   constructor(o: OptionInterface, w?: number, h?: number)
   createSaveJson(): string
 }

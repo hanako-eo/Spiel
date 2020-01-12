@@ -64,9 +64,11 @@ export namespace Loader{
 // Class
 export namespace Entity{
   export class Image implements SpielInterface.EntityInterface{
+    public use: string
+    public index = 1
     public body = null
     public scale = 1
-    public spielEngine: Game
+    public game: Game
     public scene: SpielInterface.SceneInterface
     public hidden = false
     public fixed = false
@@ -112,7 +114,7 @@ export namespace Entity{
     public width: number
     public height: number
     public scene: SpielInterface.SceneInterface
-    public spielEngine: SpielInterface.Game
+    public game: Game
     public background: Promise<HTMLImageElement>
     init(){}
     update(){}
@@ -125,6 +127,8 @@ export namespace Entity{
   }
 }
 export class Game{
+  public fps = 60
+  public state = {}
   private key = []
   private scenes: SpielInterface.SceneInterface[]
   private canvas: HTMLCanvasElement
@@ -138,6 +142,7 @@ export class Game{
   private cameraBackground: {[x: number]: HTMLImageElement} = {}
   private target: {[x: number]: SpielInterface.EntityInterface} = {}
   constructor(o: SpielInterface.OptionInterface, private w = 800, private h = 600){
+    this.state = o.state || {}
     this.canvas = o.canvas ? o.canvas : document.body.appendChild(document.createElement("canvas"))
     this.canvas.height = this.h
     this.canvas.width = this.w
@@ -149,12 +154,6 @@ export class Game{
     for(const entityName in o.load) o.load[entityName].then((l) =>{
       if(l instanceof HTMLAudioElement) this.audio[entityName] = l
       else this.load[entityName] = l
-      this.scenes.forEach((scene) =>{
-        if(entityName in scene.entity){
-          if(isClass(scene.entity[entityName])) scene.entity[entityName] = ex(scene.entity[entityName] as unknown as new () =>SpielInterface.EntityInterface)
-          this.setEntity(o, scene, entityName, l)
-        }
-      })
     })
     let i = 0
     const iL = Object.keys(o.load).length
@@ -184,7 +183,7 @@ export class Game{
     if(entity.x === undefined) entity.x = 0
     if(entity.y === undefined) entity.y = 0
     entity.scene = scene
-    entity.spielEngine = this
+    entity.game = this
     entity.canvas = this.canvas
     entity.timeout = invisible.timeout()
     entity.tick = invisible.tick
@@ -293,6 +292,8 @@ export class Game{
       }
       for(const entityName in this.saveObject[sceneId]){
         if(entityName !== "@camera"){
+          if(isClass(this.saveObject[sceneId][entityName])) this.saveObject[sceneId][entityName] = ex(this.saveObject[sceneId][entityName] as unknown as new () =>SpielInterface.EntityInterface)
+          this.setEntity(o, this.scenes[sceneId], entityName, this.load[entityName] || this.load[this.saveObject[sceneId][entityName].useImage])
           if("init" in this.saveObject[sceneId][entityName]){
             this.saveObject[sceneId][entityName].init()
             if(o.save || ("save" in o)) this.saveObject[sceneId][entityName].init = () =>{}
@@ -300,7 +301,13 @@ export class Game{
           this.draw(entityName, sceneId)
         }
       }
+      let i = 0
+      setInterval(() =>{
+        this.fps = i
+        i = 0
+      }, 1000)
       const update = () =>{
+        i++
         this.context.clearRect(0, 0, this.w, this.h)
         this.update(o, sceneId)
         if(this.use === this.scenes[sceneId].name) requestAnimationFrame(update)
@@ -317,8 +324,8 @@ export class Game{
     )
   }
   private draw(entityName: string, sceneId: number){
-    if(entityName in this.load){
-      const o = this.load[entityName]
+    if(entityName in this.saveObject[sceneId]){
+      const o = this.load[this.saveObject[sceneId][entityName].use] || this.load[entityName]
       if(o instanceof HTMLImageElement){
         if("sprit" in this.saveObject[sceneId][entityName]) this.context.drawImage(
           o,
@@ -342,7 +349,7 @@ export class Game{
       else if(!(o instanceof HTMLAudioElement)){
         let text = o.text
         if("replaced" in this.saveObject[sceneId][entityName]) [(["", ""] as [string, string]), ...(this.saveObject[sceneId][entityName] as SpielInterface.TextEntityInterface).replaced].forEach((arr) =>{
-          text = text.replace(...arr).replace(/\*[a-z0-9]+/i, (result) =>result.slice(1) in this.saveObject[sceneId][entityName] ? this.saveObject[sceneId][entityName][result.slice(1)] : result)
+          text = text.replace(...arr).replace(/\*[a-z0-9_]+/i, (result) =>result.slice(1) in this.saveObject[sceneId][entityName] ? this.saveObject[sceneId][entityName][result.slice(1)] : result)
         })
         this.context.font = `${o.fontSize * this.saveObject[sceneId][entityName].scale}px ${o.fontFamily}`
         this.context.globalAlpha = o.alpha
@@ -384,14 +391,12 @@ export class Game{
       this.drawCamera(sceneId)
       this.camera[sceneId].update()
     }
-    for(const entityName in this.saveObject[sceneId]){
-      if(entityName !== "@camera"){
-        this.saveObject[sceneId][entityName].key = this.key 
-        if("beforeRedraw" in this.saveObject[sceneId][entityName]) this.saveObject[sceneId][entityName].beforeRedraw()
-        if("redraw" in this.saveObject[sceneId][entityName]) this.saveObject[sceneId][entityName].redraw()
-        if(!this.saveObject[sceneId][entityName].hidden) this.draw(entityName, sceneId)
-        if("afterRedraw" in this.saveObject[sceneId][entityName]) this.saveObject[sceneId][entityName].afterRedraw()
-      }
+    for(const entityName of Object.keys(this.saveObject[sceneId]).filter((n) =>n !== "@camera").sort((a, b) =>this.saveObject[sceneId][a].index - this.saveObject[sceneId][b].index)){
+      this.saveObject[sceneId][entityName].key = this.key 
+      if("beforeRedraw" in this.saveObject[sceneId][entityName]) this.saveObject[sceneId][entityName].beforeRedraw()
+      if("redraw" in this.saveObject[sceneId][entityName]) this.saveObject[sceneId][entityName].redraw()
+      if(!this.saveObject[sceneId][entityName].hidden) this.draw(entityName, sceneId)
+      if("afterRedraw" in this.saveObject[sceneId][entityName]) this.saveObject[sceneId][entityName].afterRedraw()
     }
   }
 }
