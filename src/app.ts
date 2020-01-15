@@ -1,14 +1,56 @@
 import EventEmitter from "./EventEmitter"
 import SpielInterface from "./../types/index"
 import InvisibleClass from "./InvisibleClass"
-
-const LoaderEmitter = new EventEmitter()
+import uniformFunction from "./uniformFunction"
+import KeyManager from "./KeyManager"
 const isClass = (fn) =>{
   try {
     return /^\s*class/.test(fn.toString())
   } catch (error) {
     return false
   }
+}
+let self = {
+  startOut: {},
+  iout: {},
+  cancelOut: {}
+}
+function timeoutfn(fn: (i: number) =>void, time: number, n: number = 1){
+  if(uniformFunction(fn) in self.cancelOut === false){
+    if(uniformFunction(fn) in self.startOut === false){
+      self.startOut[uniformFunction(fn)] = null
+      self.iout[uniformFunction(fn)] = 0
+    }
+    if(self.startOut[uniformFunction(fn)] === null) self.startOut[uniformFunction(fn)] = Math.trunc((Date.now() + time))
+    const intervalFunction = () =>{
+      if(self.startOut[uniformFunction(fn)] <= Math.trunc((Date.now()))){
+        self.startOut[uniformFunction(fn)] = null
+        fn(self.iout[uniformFunction(fn)])
+        if(++self.iout[uniformFunction(fn)] < n){
+          if(self.startOut[uniformFunction(fn)] === null) self.startOut[uniformFunction(fn)] = Math.trunc((Date.now() + time))
+        }
+        else clearInterval((interval as unknown as number) + (self.iout[uniformFunction(fn)] = 0))
+      }
+    }
+    const interval = setInterval(intervalFunction, 1)
+  }
+}
+function canceltimeoutfn(fn: (i: number) =>void){
+  self.cancelOut[uniformFunction(fn)] = true
+}
+let nTick = {}
+let cancelTick = {}
+function tickfn(fn: () =>void, tick: number){
+  if(uniformFunction(fn) in cancelTick === false){
+    if(uniformFunction(fn) in nTick === false) nTick[uniformFunction(fn)] = 0
+    if(++nTick[uniformFunction(fn)] >= tick){
+      fn()
+      nTick[uniformFunction(fn)] = 0
+    }
+  }
+}
+function canceltickfn(fn: () =>void){
+  cancelTick[uniformFunction(fn)] = true
 }
 export function ex(Class: new (args: any) =>any, ...args: any): any{
   return new Class(args)
@@ -20,7 +62,7 @@ export namespace Loader{
       img.title = "Image"
       img.src = link
       img.onload = () =>{
-        LoaderEmitter.emit("loaded")
+        EventEmitter.emit("loaded")
         wait(img)
       }
       img.onerror = fail
@@ -32,7 +74,7 @@ export namespace Loader{
       audio.title = "Audio"
       audio.src = link
       audio.onloadeddata = () =>{
-        LoaderEmitter.emit("loaded")
+        EventEmitter.emit("loaded")
         wait(audio)
       }
       audio.onerror = fail
@@ -46,7 +88,7 @@ export namespace Loader{
       const alpha = "alpha" in (style || {}) ? style.alpha : 1
       const padding = "padding" in (style || {}) ? style.padding : 5
       setTimeout(() =>{
-        LoaderEmitter.emit("loaded")
+        EventEmitter.emit("loaded")
         wait({
           fontSize, 
           fontFamily,
@@ -56,7 +98,7 @@ export namespace Loader{
           padding,
           title: "Text"
         })
-      }, 1)
+      })
     })
   }
 }
@@ -77,13 +119,15 @@ export namespace Entity{
     public y: number
     public entityWidth: number
     public entityHeight: number
-    public key: Array<string> = []
+    public key: KeyManager
     init(){}
     afterRedraw(){}
     redraw(){}
     beforeRedraw(){}
-    tick(fn: () =>void, tick: number): void{}
-    timeout(fn: (i: number) =>void, time: number, n?: number){}
+    tick(fn: () =>void, tick: number = 1): void{ return tickfn(fn, tick) }
+    cancelTick(fn: () =>void): void{ return canceltickfn(fn) }
+    timeout(fn: (i: number) =>void, time: number, n?: number){ return timeoutfn(fn, time, n) }
+    cancelTimeout(fn: (i: number) =>void){ return canceltimeoutfn(fn) }
     changeScene(name: string | number){}
     audio(name: string): HTMLAudioElement{ return document.createElement("audio") }
     collide(entity: string, border: number | null): boolean{ return false }
@@ -118,8 +162,10 @@ export namespace Entity{
     public background: Promise<HTMLImageElement>
     init(){}
     update(){}
-    tick(fn: () =>void, tick: number): void{}
-    timeout(fn: (i: number) =>void, time: number, n?: number){}
+    tick(fn: () =>void, tick: number = 1): void{ return tickfn(fn, tick) }
+    cancelTick(fn: () =>void): void{ return canceltickfn(fn) }
+    timeout(fn: (i: number) =>void, time: number, n?: number){ return timeoutfn(fn, time, n) }
+    cancelTimeout(fn: (i: number) =>void){ return canceltimeoutfn(fn) }
     audio(name: string): HTMLAudioElement{ return document.createElement("audio") }
     getEntity(entity: string): SpielInterface.EntityInterface{ return Object.assign({}, (this as unknown as SpielInterface.EntityInterface)) }
     getTarget(): SpielInterface.EntityInterface{ return Object.assign({}, (this as unknown as SpielInterface.EntityInterface)) }
@@ -129,7 +175,7 @@ export namespace Entity{
 export class Game{
   public fps = 60
   public state = {}
-  private key = []
+  private key = new KeyManager()
   private scenes: SpielInterface.SceneInterface[]
   private canvas: HTMLCanvasElement
   private context: CanvasRenderingContext2D
@@ -156,11 +202,12 @@ export class Game{
       else this.load[entityName] = l
     })
     let i = 0
-    const iL = Object.keys(o.load).length
-    LoaderEmitter.on("loaded", () =>{
+    EventEmitter.on("loaded", () =>{
       this.context.clearRect(0, 0, this.w, this.h)
-      if(++i === iL) this.start(o)
-      else if("loadScene" in o) o.loadScene(this.context, Math.round(i / iL) * 100)
+      let per = Math.round((++i / Object.keys(o.load).length) * 100)
+      if(per > 100) this.start(o)
+      else if("loadScene" in o) o.loadScene(this.context, per)
+      if(per === 100) EventEmitter.emit("loaded")
     })
   }
   public createSaveJson(): string{
@@ -185,8 +232,6 @@ export class Game{
     entity.scene = scene
     entity.game = this
     entity.canvas = this.canvas
-    entity.timeout = invisible.timeout()
-    entity.tick = invisible.tick
     entity.getEntity = function(entity){
       if(scene.entity[entity] instanceof Entity.Camera) throw new TypeError("You can't get the camera")
       return Object.assign({}, scene.entity[entity])
@@ -267,9 +312,9 @@ export class Game{
         .filter((keys) =>keys !== null)
         .join("+")
       if(key !== "Alt+F4") ev.preventDefault()
-      if(!this.key.find((v) =>v === key)) this.key.push(key)
+      this.key.add(key)
     }
-    window.onkeyup = (ev: KeyboardEvent) => this.key = this.key.filter((v) => v !== [ev.ctrlKey || ev.key === "Control" ? "Ctrl" : null, ev.altKey || ev.key === "Alt" ? "Alt" : null, ev.shiftKey || ev.key === "Shift" ? "Shift" : null, ev.key === "Control" || ev.key === "Alt" || ev.key === "Shift" ? null : ev.key === "Deconste" ? "Del" : ev.key === " " ? "Space" : ev.key]
+    window.onkeyup = (ev: KeyboardEvent) =>this.key.remove([ev.ctrlKey || ev.key === "Control" ? "Ctrl" : null, ev.altKey || ev.key === "Alt" ? "Alt" : null, ev.shiftKey || ev.key === "Shift" ? "Shift" : null, ev.key === "Control" || ev.key === "Alt" || ev.key === "Shift" ? null : ev.key === "Deconste" ? "Del" : ev.key === " " ? "Space" : ev.key]
       .filter((keys) =>keys !== null)
       .join("+"))
     if(this.sceneId !== -1) this.scene(o, this.sceneId)
@@ -308,6 +353,7 @@ export class Game{
       }, 1000)
       const update = () =>{
         i++
+        EventEmitter.emit("key:tick-increment")
         this.context.clearRect(0, 0, this.w, this.h)
         this.update(o, sceneId)
         if(this.use === this.scenes[sceneId].name) requestAnimationFrame(update)
@@ -392,7 +438,7 @@ export class Game{
       this.camera[sceneId].update()
     }
     for(const entityName of Object.keys(this.saveObject[sceneId]).filter((n) =>n !== "@camera").sort((a, b) =>this.saveObject[sceneId][a].index - this.saveObject[sceneId][b].index)){
-      this.saveObject[sceneId][entityName].key = this.key 
+      this.saveObject[sceneId][entityName].key = this.key
       if("beforeRedraw" in this.saveObject[sceneId][entityName]) this.saveObject[sceneId][entityName].beforeRedraw()
       if("redraw" in this.saveObject[sceneId][entityName]) this.saveObject[sceneId][entityName].redraw()
       if(!this.saveObject[sceneId][entityName].hidden) this.draw(entityName, sceneId)

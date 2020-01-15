@@ -18,10 +18,15 @@
             load: {
                 image1: Spiel.Loader.Image("./image3.png"),
                 image2: Spiel.Loader.Image("./image2.png"),
-                text2: Spiel.Loader.Text("salut", {color: "#fff", fontSize: 33, padding: 7 + 7 / 3}),
+                text2: Spiel.Loader.Text("salut", {color: "#fff", fontSize: 33, padding: 7 + 7 / 3})
             },
+            /**
+             * @param {CanvasRenderingContext2D} ctx
+            */
             loadScene(ctx, p){
-
+                ctx.fillStyle = "#000"
+                ctx.rect(0, 0, 800, 600)
+                ctx.fill()
             },
             scene: [
                 {
@@ -44,12 +49,11 @@
                                 this.y = 100
                             }
                             redraw(){
-                                console.log(this.game.fps)
-                                if(this.key.findIndex((v) =>v === "e") !== -1) console.log(this.scene.state.test)
-                                if(this.key.findIndex((key) =>key === "ArrowUp") !== -1) this.y += -1
-                                if(this.key.findIndex((key) =>key === "ArrowDown") !== -1) this.y += 1
-                                if(this.key.findIndex((key) =>key === "ArrowLeft") !== -1) this.x += -1
-                                if(this.key.findIndex((key) =>key === "ArrowRight") !== -1) this.x += 1
+                                if(this.key.has("e")) console.log(this.scene.state.test)
+                                if(this.key.has("ArrowUp")) this.y += -1
+                                if(this.key.has("ArrowDown")) this.y += 1
+                                if(this.key.has("ArrowLeft")) this.x += -1
+                                if(this.key.has("ArrowRight")) this.x += 1
                             }
                         },
                         image1: Spiel.ex(class extends Spiel.Entity.Image{
@@ -64,8 +68,8 @@
                                 this.y = 100
                             }
                             redraw(){
-                                if(this.key.findIndex((v) =>v === "z") !== -1) console.log(this.scene.state.test)
-                                if(this.key.findIndex((v) =>v === "a") !== -1){
+                                if(this.key.has("z")) console.log(this.scene.state.test)
+                                if(this.key.has("a")){
                                     this.scene.state.test = "test2"
                                     this.changeScene("scene2")
                                 }
@@ -76,9 +80,6 @@
                                 this.use = "image2"
                                 this.x = 350
                                 this.y = 300
-                            }
-                            redraw(){
-                                // console.log(this)
                             }
                         }),
                     }
@@ -92,7 +93,7 @@
                                 this.y = 400
                             }
                             redraw(){
-                                if(this.key.findIndex((v) =>v === "z") !== -1){
+                                if(this.key.has("z")){
                                     this.changeScene("scene1")
                                 }
                             }

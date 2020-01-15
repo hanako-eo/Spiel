@@ -1,3 +1,15 @@
+interface KeyManager{
+  add(key: string): void
+  remove(key: string): void
+  has(key: string): boolean
+  getKey(key: string): Key | null
+  clear(): void
+}
+interface Key{
+  getKey(): string
+  getTime(): number
+  getTick(): number
+}
 export interface OptionInterface{
   darkmode?: boolean
   pixel?: boolean
@@ -5,7 +17,7 @@ export interface OptionInterface{
   load: {[x: string]: Promise<HTMLImageElement | HTMLAudioElement | TextInterface>}
   scene: Array<SceneInterface>
   save?: boolean
-  loadScene?(ctx: CanvasRenderingContext2D, percentage: number): void
+  loadScene(ctx: CanvasRenderingContext2D, percentage: number): void
   state?: {}
 }
 interface AnyEntity{
@@ -35,14 +47,16 @@ export interface BodyEntityInterface{
   height: number
 }
 export interface CameraInterface{
-  init?(): void
-  update?(): void
-  audio?(name: string): HTMLAudioElement
-  getEntity?(entity: string): EntityInterface
+  init(): void
+  update(): void
+  audio(name: string): HTMLAudioElement
+  getEntity(entity: string): EntityInterface
   getTarget(): EntityInterface | SpritEntityInterface | TextEntityInterface
   setTarget(entity: string): void
-  timeout?(fn: (i: number) =>void, time: number, number_step: number): void
-  tick?(fn: () =>void, tick: number): void
+  tick(fn: () =>void, tick: number): void
+  cancelTick(fn: () =>void): void
+  timeout(fn: (i: number) =>void, time: number, n?: number): void
+  cancelTimeout(fn: (i: number) =>void): void
   canvas: HTMLCanvasElement
   x?: number
   y?: number
@@ -53,16 +67,18 @@ export interface CameraInterface{
   background?: Promise<HTMLImageElement>
 }
 export interface EntityInterface{
-  init?(): void
-  beforeRedraw?(): void
-  redraw?(): void
-  afterRedraw?(): void
-  audio?(name: string): HTMLAudioElement
-  collide?(entity: string, border: number | null): boolean
-  getEntity?(entity: string): EntityInterface
+  init(): void
+  beforeRedraw(): void
+  redraw(): void
+  afterRedraw(): void
+  audio(name: string): HTMLAudioElement
+  collide(entity: string, border: number | null): boolean
+  getEntity(entity: string): EntityInterface
   changeScene(name: string | number): void
-  timeout?(fn: (i: number) =>void, time: number, number_step: number): void
-  tick?(fn: () =>void, tick: number): void
+  tick(fn: () =>void, tick: number): void
+  cancelTick(fn: () =>void): void
+  timeout(fn: (i: number) =>void, time: number, n?: number): void
+  cancelTimeout(fn: (i: number) =>void): void
   use: string
   index: number
   fixed?: boolean
@@ -70,7 +86,7 @@ export interface EntityInterface{
   game?: Game
   body?: BodyEntityInterface
   hidden?: boolean
-  key?: Array<string>
+  key?: KeyManager
   canvas: HTMLCanvasElement
   x?: number
   y?: number
@@ -107,14 +123,14 @@ export namespace Entity{
     public use: string
     public index: number
     public fixed: boolean
-    public spielEngine: Game
+    public game: Game
     public scale: number
     public canvas: HTMLCanvasElement
     public x: number
     public y: number
     public entityWidth: number
     public entityHeight: number
-    public key: Array<string>
+    public key: KeyManager
     init(): void
     afterRedraw(): void
     redraw(): void
@@ -123,8 +139,10 @@ export namespace Entity{
     collide(entity: string): boolean
     getEntity(entity: string): EntityInterface
     changeScene(name: string | number): void
-    timeout(fn: (i: number) =>void, time: number, number_step?: number): void
     tick(fn: () =>void, tick: number): void
+    cancelTick(fn: () =>void): void
+    timeout(fn: (i: number) =>void, time: number, n?: number): void
+    cancelTimeout(fn: (i: number) =>void): void
   }
   export class Text extends Image implements TextEntityInterface{
     public replaced: Array<[string | RegExp, any]>
@@ -145,14 +163,16 @@ export namespace Entity{
     animation(o: { x?: number | Array<number>; y?: number | Array<number> }, step?: (n: number) =>void): void
   }
   export class Camera implements CameraInterface{
-    init?(): void
-    update?(): void
-    audio?(name: string): HTMLAudioElement
-    getEntity?(entity: string): EntityInterface
+    init(): void
+    update(): void
+    audio(name: string): HTMLAudioElement
+    getEntity(entity: string): EntityInterface
     getTarget(): EntityInterface | SpritEntityInterface | TextEntityInterface
     setTarget(entity: string): void
-    timeout?(fn: (i: number) =>void, time: number, number_step: number): void
-    tick?(fn: () =>void, tick: number): void
+    tick(fn: () =>void, tick: number): void
+    cancelTick(fn: () =>void): void
+    timeout(fn: (i: number) =>void, time: number, n?: number): void
+    cancelTimeout(fn: (i: number) =>void): void
     canvas: HTMLCanvasElement
     x?: number
     y?: number
