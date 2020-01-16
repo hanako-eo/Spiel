@@ -18,15 +18,7 @@
             load: {
                 image1: Spiel.Loader.Image("./image3.png"),
                 image2: Spiel.Loader.Image("./image2.png"),
-                text2: Spiel.Loader.Text("salut", {color: "#fff", fontSize: 33, padding: 7 + 7 / 3})
-            },
-            /**
-             * @param {CanvasRenderingContext2D} ctx
-            */
-            loadScene(ctx, p){
-                ctx.fillStyle = "#000"
-                ctx.rect(0, 0, 800, 600)
-                ctx.fill()
+                text2: Spiel.Loader.Text("*e", {color: "#fff", fontSize: 33, padding: 7 + 7 / 3})
             },
             scene: [
                 {
@@ -82,6 +74,19 @@
                                 this.y = 300
                             }
                         }),
+                        text2: class extends Spiel.Entity.Text{
+                            init(){
+                                this.x = 100
+                                this.y = 100
+                                this.e = "test"
+                            }
+                            redraw(){
+                                console.log(this.game.fps)
+                                this.tick(() =>{
+                                    this.e += "\ntestp"
+                                }, 1500)
+                            }
+                        }
                     }
                 },
                 {backgroundColor: "#0ff",
