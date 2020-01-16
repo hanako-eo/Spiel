@@ -397,8 +397,8 @@ export class Game{
         if("replaced" in this.saveObject[sceneId][entityName]) [(["", ""] as [string, string]), ...(this.saveObject[sceneId][entityName] as SpielInterface.TextEntityInterface).replaced].forEach((arr) =>{
           text = text.replace(...arr).replace(/\*[a-z0-9_]+/i, (result) =>result.slice(1) in this.saveObject[sceneId][entityName] ? this.saveObject[sceneId][entityName][result.slice(1)] : result)
         })
-        this.saveObject[sceneId][entityName].entityWidth = null
-        this.saveObject[sceneId][entityName].entityHeight = null
+        this.saveObject[sceneId][entityName].entityWidth = 0
+        this.saveObject[sceneId][entityName].entityHeight = 0
         this.context.font = `${o.fontSize * this.saveObject[sceneId][entityName].scale}px ${o.fontFamily}`
         this.context.globalAlpha = o.alpha
         this.context.fillStyle = o.color
