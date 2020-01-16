@@ -17,7 +17,7 @@ export interface OptionInterface{
   load: {[x: string]: Promise<HTMLImageElement | HTMLAudioElement | TextInterface>}
   scene: Array<SceneInterface>
   save?: boolean
-  loadScene(ctx: CanvasRenderingContext2D, percentage: number): void
+  loadScene?(ctx: CanvasRenderingContext2D, percentage: number): void
   state?: {}
 }
 interface AnyEntity{
