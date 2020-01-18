@@ -245,8 +245,10 @@ export class Game{
       entity.changeScene = (name) =>{
         this.sceneId = this.scenes.findIndex((scene) =>scene.name === name)
         if(this.sceneId !== -1){
-          if(!(this.sceneId in this.saveObject)) this.saveObject[this.sceneId] = this.scenes[this.sceneId].entity
-          this.use = this.scenes[this.sceneId].name
+          if("toScene" in this.scenes[this.sceneId] === false || this.scenes[this.sceneId].toScene(this.use)){
+            if(!(this.sceneId in this.saveObject)) this.saveObject[this.sceneId] = this.scenes[this.sceneId].entity
+            this.use = this.scenes[this.sceneId].name
+          }
         }
       }
       if(l instanceof HTMLImageElement){
