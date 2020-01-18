@@ -10,7 +10,7 @@ const isClass = (fn) =>{
     return false
   }
 }
-let self = {
+const self = {
   startOut: {},
   iout: {},
   cancelOut: {}
@@ -38,8 +38,8 @@ function timeoutfn(fn: (i: number) =>void, time: number, n: number = 1){
 function canceltimeoutfn(fn: (i: number) =>void){
   self.cancelOut[uniformFunction(fn)] = true
 }
-let nTick = {}
-let cancelTick = {}
+const nTick = {}
+const cancelTick = {}
 function tickfn(fn: () =>void, tick: number){
   if(uniformFunction(fn) in cancelTick === false){
     if(uniformFunction(fn) in nTick === false) nTick[uniformFunction(fn)] = 0
@@ -106,6 +106,7 @@ export namespace Loader{
 // Class
 export namespace Entity{
   export class Image implements SpielInterface.EntityInterface{
+    public alpha: number = 1
     public use: string
     public index = 1
     public body = null
@@ -124,6 +125,7 @@ export namespace Entity{
     afterRedraw(){}
     redraw(){}
     beforeRedraw(){}
+    on(event: string, fn: () =>any): void{}
     tick(fn: () =>void, tick: number = 1): void{ return tickfn(fn, tick) }
     cancelTick(fn: () =>void): void{ return canceltickfn(fn) }
     timeout(fn: (i: number) =>void, time: number, n?: number){ return timeoutfn(fn, time, n) }
@@ -138,12 +140,10 @@ export namespace Entity{
     setFontSize(v: number){}
     setFontFamily(v: string){}
     setColor(v: string){}
-    setAlpha(v: number){}
     setPadding(v: number){}
     getFontSize(): number{return 0}
     getFontFamily(): string{return ""}
     getColor(): string{return ""}
-    getAlpha(): number{return 0}
     getPadding(): number{return 0}
   }
   export class Sprit extends Image implements SpielInterface.SpritEntityInterface{
@@ -183,10 +183,11 @@ export class Game{
   private audio: {[x: string]: HTMLAudioElement} = {}
   private sceneId: number
   private saveObject: {[x: string]: SpielInterface.SceneEntity} = {}
-  private load: {[x: string]: HTMLImageElement | HTMLAudioElement | SpielInterface.TextInterface} = {}
+  private load: {[x: string]: HTMLImageElement | SpielInterface.TextInterface} = {}
   private camera: {[x: number]: SpielInterface.CameraInterface} = {}
   private cameraBackground: {[x: number]: HTMLImageElement} = {}
   private target: {[x: number]: SpielInterface.EntityInterface} = {}
+  private onTarget: {[x: string]: {[x: string]: () =>void}} = {}
   constructor(o: SpielInterface.OptionInterface, private w = 800, private h = 600){
     this.state = o.state || {}
     this.canvas = o.canvas ? o.canvas : document.body.appendChild(document.createElement("canvas"))
@@ -204,7 +205,7 @@ export class Game{
     let i = 0
     EventEmitter.on("loaded", () =>{
       this.context.clearRect(0, 0, this.w, this.h)
-      let per = Math.round((++i / Object.keys(o.load).length) * 100)
+      const per = Math.round((++i / Object.keys(o.load).length) * 100)
       if(per > 100) this.start(o)
       else if("loadScene" in o) o.loadScene(this.context, per)
       if(per === 100) EventEmitter.emit("loaded")
@@ -242,6 +243,12 @@ export class Game{
       throw new TypeError(`${name} is not Audio Element`)
     }
     if(!(entity instanceof Entity.Camera) && entityName !== "@camera"){
+      entity.on = (event, fn) =>{
+        this.onTarget[entityName] = {[event]: fn}
+      }
+      entity.off = (event) =>{
+        if(entityName in this.onTarget) delete this.onTarget[entityName][event]
+      }
       entity.changeScene = (name) =>{
         this.sceneId = this.scenes.findIndex((scene) =>scene.name === name)
         if(this.sceneId !== -1){
@@ -319,6 +326,15 @@ export class Game{
     window.onkeyup = (ev: KeyboardEvent) =>this.key.remove([ev.ctrlKey || ev.key === "Control" ? "Ctrl" : null, ev.altKey || ev.key === "Alt" ? "Alt" : null, ev.shiftKey || ev.key === "Shift" ? "Shift" : null, ev.key === "Control" || ev.key === "Alt" || ev.key === "Shift" ? null : ev.key === "Deconste" ? "Del" : ev.key === " " ? "Space" : ev.key]
       .filter((keys) =>keys !== null)
       .join("+"))
+    const on = (event: string, ev: MouseEvent) =>{
+      for(const entityName in this.onTarget){
+        if(event in this.onTarget[entityName]){
+          if ((this.saveObject[this.sceneId][entityName].x <= ev.offsetX && (this.saveObject[this.sceneId][entityName].x + this.saveObject[this.sceneId][entityName].entityWidth) >= ev.offsetX) && (this.saveObject[this.sceneId][entityName].y <= ev.offsetY && (this.saveObject[this.sceneId][entityName].y + this.saveObject[this.sceneId][entityName].entityWidth) >= ev.offsetY)) this.onTarget[entityName][event]()
+        }
+      }
+    }
+    this.canvas.onmouseover = (ev: MouseEvent) =>on("hover", ev)
+    this.canvas.onclick = (ev: MouseEvent) =>on("click", ev)
     if(this.sceneId !== -1) this.scene(o, this.sceneId)
   }
   private scene(o: SpielInterface.OptionInterface, sceneId: number){
@@ -372,8 +388,10 @@ export class Game{
     )
   }
   private draw(entityName: string, sceneId: number){
+    this.context.save()
     if(entityName in this.saveObject[sceneId]){
       const o = this.load[this.saveObject[sceneId][entityName].use] || this.load[entityName]
+      this.context.globalAlpha = this.saveObject[sceneId][entityName].alpha
       if(o instanceof HTMLImageElement){
         if("sprit" in this.saveObject[sceneId][entityName]) this.context.drawImage(
           o,
@@ -402,7 +420,6 @@ export class Game{
         this.saveObject[sceneId][entityName].entityWidth = 0
         this.saveObject[sceneId][entityName].entityHeight = 0
         this.context.font = `${o.fontSize * this.saveObject[sceneId][entityName].scale}px ${o.fontFamily}`
-        this.context.globalAlpha = o.alpha
         this.context.fillStyle = o.color
         text.split("\n").forEach((text, i) =>{
           if(this.saveObject[sceneId][entityName].entityWidth < this.context.measureText(text).width) this.saveObject[sceneId][entityName].entityWidth = this.context.measureText(text).width
@@ -415,6 +432,7 @@ export class Game{
         })
       }
     }
+    this.context.restore()
   }
   private update(o: SpielInterface.OptionInterface, sceneId: number){
     if(this.scenes[sceneId].backgroundColor || o.darkmode || !("darkmode" in o)){

@@ -68,6 +68,7 @@ export interface CameraInterface{
   background?: Promise<HTMLImageElement>
 }
 export interface EntityInterface{
+  on(event: string, fn: () =>any): void
   init(): void
   beforeRedraw(): void
   redraw(): void
@@ -81,6 +82,7 @@ export interface EntityInterface{
   timeout(fn: (i: number) =>void, time: number, n?: number): void
   cancelTimeout(fn: (i: number) =>void): void
   use: string
+  alpha: number
   index: number
   fixed?: boolean
   scene?: SceneInterface
@@ -105,12 +107,10 @@ export interface TextEntityInterface extends EntityInterface{
   setFontSize(v: number): void
   setFontFamily(v: string): void
   setColor(v: string): void
-  setAlpha(v: number): void
   setPadding(v: number): void
   getFontSize(): number
   getFontFamily(): string
   getColor(): string
-  getAlpha(): number
   getPadding(): number
 }
 export function ex(Class: new (...args: any[]) =>any, ...any: any): any
@@ -121,6 +121,7 @@ export namespace Loader{
 }
 export namespace Entity{
   export class Image implements EntityInterface{
+    public alpha: number
     public use: string
     public index: number
     public fixed: boolean
@@ -132,6 +133,7 @@ export namespace Entity{
     public entityWidth: number
     public entityHeight: number
     public key: KeyManager
+    on(event: string, fn: () =>any): void
     init(): void
     afterRedraw(): void
     redraw(): void
