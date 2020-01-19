@@ -188,7 +188,7 @@ export namespace Entity{
 }
 export class Game{
   public fps: number
-  public state: Object
+  public state: {[x: string]: any}
   constructor(o: OptionInterface, w?: number, h?: number)
   createSaveJson(): string
 }
