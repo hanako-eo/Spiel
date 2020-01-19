@@ -186,9 +186,9 @@ export namespace Entity{
     background?: Promise<HTMLImageElement>
   }
 }
-export class Game<StateValue = {}>{
+export class Game{
   public fps: number
-  public state: StateValue
+  public state: Object
   constructor(o: OptionInterface, w?: number, h?: number)
   createSaveJson(): string
 }
