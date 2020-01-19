@@ -432,7 +432,7 @@ export class Game{
           this.context.fillText(
             text.trim(), 
             this.saveObject[sceneId][entityName].x + (this.camera[sceneId] === undefined || this.saveObject[sceneId][entityName].fixed ? 0 : this.camera[sceneId].x), 
-            this.saveObject[sceneId][entityName].y + (this.camera[sceneId] === undefined || this.saveObject[sceneId][entityName].fixed ? 0 : this.camera[sceneId].y) + ((o.fontSize + o.padding) * i)
+            this.saveObject[sceneId][entityName].y + (o.fontSize * this.saveObject[sceneId][entityName].scale / 1.4) + (this.camera[sceneId] === undefined || this.saveObject[sceneId][entityName].fixed ? 0 : this.camera[sceneId].y) + ((o.fontSize + o.padding) * i)
           )
         })
       }
