@@ -329,7 +329,12 @@ export class Game{
     const on = (event: string, ev: MouseEvent) =>{
       for(const entityName in this.onTarget){
         if(event in this.onTarget[entityName]){
-          if ((this.saveObject[this.sceneId][entityName].x <= ev.offsetX && (this.saveObject[this.sceneId][entityName].x + this.saveObject[this.sceneId][entityName].entityWidth) >= ev.offsetX) && (this.saveObject[this.sceneId][entityName].y <= ev.offsetY && (this.saveObject[this.sceneId][entityName].y + this.saveObject[this.sceneId][entityName].entityWidth) >= ev.offsetY)) this.onTarget[entityName][event]()
+          if(
+            ev.offsetX < this.saveObject[this.sceneId][entityName].x + (this.saveObject[this.sceneId][entityName].entityWidth * this.saveObject[this.sceneId][entityName].scale) &&
+            ev.offsetX > this.saveObject[this.sceneId][entityName].x &&
+            ev.offsetY < this.saveObject[this.sceneId][entityName].y + (this.saveObject[this.sceneId][entityName].entityHeight * this.saveObject[this.sceneId][entityName].scale) &&
+            ev.offsetY > this.saveObject[this.sceneId][entityName].y
+          ) this.onTarget[entityName][event]()
         }
       }
     }
