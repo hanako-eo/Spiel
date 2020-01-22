@@ -126,6 +126,7 @@ export namespace Entity{
     redraw(){}
     beforeRedraw(){}
     on(event: string, fn: () =>any): void{}
+    off(event: string): void {}
     tick(fn: () =>void, tick: number = 1): void{ return tickfn(fn, tick) }
     cancelTick(fn: () =>void): void{ return canceltickfn(fn) }
     timeout(fn: (i: number) =>void, time: number, n?: number){ return timeoutfn(fn, time, n) }
@@ -172,10 +173,20 @@ export namespace Entity{
     setTarget(entity: string){}
   }
 }
+export class Plugin{
+  changeScene(entities: SpielInterface.SceneEntity, sceneName: string | number){}
+  sceneUpdate(entities: SpielInterface.SceneEntity, sceneName: string | number){}
+  entityUpdate(entity: SpielInterface.EntityInterface | SpielInterface.SpritEntityInterface | SpielInterface.TextEntityInterface){}
+  onCanvas(canvas: HTMLCanvasElement, entities: SpielInterface.SceneEntity, onEntities: {[x: string]: {[x: string]: () =>void}}){}
+  cameraUpdate(camera: SpielInterface.CameraInterface){}
+  getKeys(key: KeyManager){}
+  onFirstSetEntity(entity: SpielInterface.EntityInterface | SpielInterface.SpritEntityInterface | SpielInterface.TextEntityInterface){}
+}
 export class Game{
   public fps = 60
   public state = {}
   private key = new KeyManager()
+  private plugins: Array<Plugin>
   private scenes: SpielInterface.SceneInterface[]
   private canvas: HTMLCanvasElement
   private context: CanvasRenderingContext2D
@@ -187,10 +198,11 @@ export class Game{
   private camera: {[x: number]: SpielInterface.CameraInterface} = {}
   private cameraBackground: {[x: number]: HTMLImageElement} = {}
   private target: {[x: number]: SpielInterface.EntityInterface} = {}
-  private onTarget: {[x: string]: {[x: string]: () =>void}} = {}
+  private onTarget: {[x: string]:{[x: string]: {[x: string]: () =>void}}} = {}
   constructor(o: SpielInterface.OptionInterface, private w = 800, private h = 600){
+    this.plugins = o.plugins || []
     this.state = o.state || {}
-    this.canvas = o.canvas ? o.canvas : document.body.appendChild(document.createElement("canvas"))
+    this.canvas = o.canvas || document.body.appendChild(document.createElement("canvas"))
     this.canvas.height = this.h
     this.canvas.width = this.w
     this.context = this.canvas.getContext("2d")
@@ -217,12 +229,7 @@ export class Game{
       currentSceneName: this.use,
       allScene: Object.assign({}, this.saveObject)
     }
-    for(const sceneId in o.allScene){
-      for(const entityName in o.allScene[sceneId]){
-        delete o.allScene[sceneId][entityName].canvas
-        o.allScene[sceneId][entityName].key = []
-      }
-    }
+    for(const sceneId in o.allScene) for(const entityName in o.allScene[sceneId]) delete o.allScene[sceneId][entityName].canvas
     return JSON.stringify(o)
   }
   private setEntity(o: SpielInterface.OptionInterface, scene: SpielInterface.SceneInterface, entityName: string, l?: HTMLImageElement | HTMLAudioElement | SpielInterface.TextInterface){
@@ -244,18 +251,17 @@ export class Game{
     }
     if(!(entity instanceof Entity.Camera) && entityName !== "@camera"){
       entity.on = (event, fn) =>{
-        this.onTarget[entityName] = {[event]: fn}
+        this.onTarget[this.sceneId][entityName] = {[event]: fn}
       }
       entity.off = (event) =>{
-        if(entityName in this.onTarget) delete this.onTarget[entityName][event]
+        if(entityName in this.onTarget[this.sceneId]) delete this.onTarget[this.sceneId][entityName][event]
       }
       entity.changeScene = (name) =>{
         this.sceneId = this.scenes.findIndex((scene) =>scene.name === name)
-        if(this.sceneId !== -1){
-          if("toScene" in this.scenes[this.sceneId] === false || this.scenes[this.sceneId].toScene(this.use)){
-            if(!(this.sceneId in this.saveObject)) this.saveObject[this.sceneId] = this.scenes[this.sceneId].entity
-            this.use = this.scenes[this.sceneId].name
-          }
+        if(this.sceneId !== -1 && "toScene" in this.scenes[this.sceneId] === false || this.scenes[this.sceneId].toScene(this.use)){
+          if(!(this.sceneId in this.saveObject)) this.saveObject[this.sceneId] = this.scenes[this.sceneId].entity
+          this.use = this.scenes[this.sceneId].name
+          for(const plugin of this.plugins) plugin.changeScene(this.saveObject[this.sceneId], this.use)
         }
       }
       if(l instanceof HTMLImageElement){
@@ -293,16 +299,14 @@ export class Game{
           (entity as SpielInterface.SpritEntityInterface).animation = invisible.anim()
         }
       }else{
-        entity.setFontSize = (v: number) =>{(l as SpielInterface.TextInterface).fontSize = v}
-        entity.setFontFamily = (v: string) =>{(l as SpielInterface.TextInterface).fontFamily = v}
-        entity.setColor = (v: string) =>{(l as SpielInterface.TextInterface).color = v}
-        entity.setAlpha = (v: number) =>{(l as SpielInterface.TextInterface).alpha = v}
-        entity.setPadding = (v: number) =>{(l as SpielInterface.TextInterface).padding = v}
-        entity.getFontSize = () =>(l as SpielInterface.TextInterface).fontSize
-        entity.getFontFamily = () =>(l as SpielInterface.TextInterface).fontFamily
-        entity.getColor = () =>(l as SpielInterface.TextInterface).color
-        entity.getAlpha = () =>(l as SpielInterface.TextInterface).alpha
-        entity.getPadding = () =>(l as SpielInterface.TextInterface).padding
+        (entity as SpielInterface.TextEntityInterface).setFontSize = (v: number) =>{(l as SpielInterface.TextInterface).fontSize = v}
+        (entity as SpielInterface.TextEntityInterface).setFontFamily = (v: string) =>{(l as SpielInterface.TextInterface).fontFamily = v}
+        (entity as SpielInterface.TextEntityInterface).setColor = (v: string) =>{(l as SpielInterface.TextInterface).color = v}
+        (entity as SpielInterface.TextEntityInterface).setPadding = (v: number) =>{(l as SpielInterface.TextInterface).padding = v}
+        (entity as SpielInterface.TextEntityInterface).getFontSize = () =>{return (l as SpielInterface.TextInterface).fontSize}
+        (entity as SpielInterface.TextEntityInterface).getFontFamily = () =>{return (l as SpielInterface.TextInterface).fontFamily}
+        (entity as SpielInterface.TextEntityInterface).getColor = () =>{return (l as SpielInterface.TextInterface).color}
+        (entity as SpielInterface.TextEntityInterface).getPadding = () =>{return (l as SpielInterface.TextInterface).padding}
       }
     }else if(entity instanceof Entity.Camera && entityName === "@camera"){
       entity.getTarget = () =>{
@@ -313,42 +317,54 @@ export class Game{
         this.target[this.sceneId] = scene.entity[entity]
       }
     }
+    for(const plugin of this.plugins) plugin.onFirstSetEntity(entity)
   }
   private start(o: SpielInterface.OptionInterface){
-    window.onkeydown = (ev: KeyboardEvent) =>{
-      ev.preventDefault()
-      const key = [ev.ctrlKey ? "Ctrl" : null, ev.altKey ? "Alt" : null, ev.shiftKey ? "Shift" : null, ev.key === "Control" || ev.key === "Alt" || ev.key === "Shift" ? null : ev.key === "Deconste" ? "Del" : ev.key === " " ? "Space" : ev.key]
-        .filter((keys) =>keys !== null)
-        .join("+")
-      if(key !== "Alt+F4") ev.preventDefault()
-      this.key.add(key)
-    }
-    window.onkeyup = (ev: KeyboardEvent) =>this.key.remove([ev.ctrlKey || ev.key === "Control" ? "Ctrl" : null, ev.altKey || ev.key === "Alt" ? "Alt" : null, ev.shiftKey || ev.key === "Shift" ? "Shift" : null, ev.key === "Control" || ev.key === "Alt" || ev.key === "Shift" ? null : ev.key === "Deconste" ? "Del" : ev.key === " " ? "Space" : ev.key]
-      .filter((keys) =>keys !== null)
-      .join("+"))
-    const on = (event: string, ev: MouseEvent) =>{
-      for(const entityName in this.onTarget){
-        if(event in this.onTarget[entityName]){
-          if(
-            ev.offsetX < this.saveObject[this.sceneId][entityName].x + (this.saveObject[this.sceneId][entityName].entityWidth * this.saveObject[this.sceneId][entityName].scale) &&
-            ev.offsetX > this.saveObject[this.sceneId][entityName].x &&
-            ev.offsetY < this.saveObject[this.sceneId][entityName].y + (this.saveObject[this.sceneId][entityName].entityHeight * this.saveObject[this.sceneId][entityName].scale) &&
-            ev.offsetY > this.saveObject[this.sceneId][entityName].y
-          ) this.onTarget[entityName][event]()
+    if(this.sceneId !== -1){
+      this.scene(o, this.sceneId)
+      if(this.onTarget[this.sceneId]　=== undefined) this.onTarget[this.sceneId] = {}
+      window.onkeydown = (ev: KeyboardEvent) =>{
+        ev.preventDefault()
+        const key = [ev.ctrlKey ? "Ctrl" : null, ev.altKey ? "Alt" : null, ev.shiftKey ? "Shift" : null, ev.key === "Control" || ev.key === "Alt" || ev.key === "Shift" ? null : ev.key === "Deconste" ? "Del" : ev.key === " " ? "Space" : ev.key]
+          .filter((keys) =>keys !== null)
+          .join("+")
+        if(key !== "Alt+F4") ev.preventDefault()
+        this.key.add(key)
+        for(const plugin of this.plugins) plugin.getKeys(this.key)
+      }
+      window.onkeyup = (ev: KeyboardEvent) =>{
+        this.key.remove([ev.ctrlKey || ev.key === "Control" ? "Ctrl" : null, ev.altKey || ev.key === "Alt" ? "Alt" : null, ev.shiftKey || ev.key === "Shift" ? "Shift" : null, ev.key === "Control" || ev.key === "Alt" || ev.key === "Shift" ? null : ev.key === "Deconste" ? "Del" : ev.key === " " ? "Space" : ev.key]
+          .filter((keys) =>keys !== null)
+          .join("+"))
+        for(const plugin of this.plugins) plugin.getKeys(this.key)
+      }
+
+      for(const plugin of this.plugins) plugin.onCanvas(this.canvas, this.saveObject[this.sceneId], this.onTarget[this.sceneId])
+      const on = (event: string, ev: MouseEvent) =>{
+        for(const entityName in this.onTarget[this.sceneId]){
+          if(event in this.onTarget[this.sceneId][entityName]){
+            if(
+              ev.offsetX < this.saveObject[this.sceneId][entityName].x + (this.saveObject[this.sceneId][entityName].entityWidth * this.saveObject[this.sceneId][entityName].scale) &&
+              ev.offsetX > this.saveObject[this.sceneId][entityName].x &&
+              ev.offsetY < this.saveObject[this.sceneId][entityName].y + (this.saveObject[this.sceneId][entityName].entityHeight * this.saveObject[this.sceneId][entityName].scale) &&
+              ev.offsetY > this.saveObject[this.sceneId][entityName].y
+            ) this.onTarget[this.sceneId][entityName][event]()
+          }
         }
       }
+      this.canvas.onmouseover = (ev: MouseEvent) =>on("hover", ev)
+      this.canvas.onclick = (ev: MouseEvent) =>on("click", ev)
     }
-    this.canvas.onmouseover = (ev: MouseEvent) =>on("hover", ev)
-    this.canvas.onclick = (ev: MouseEvent) =>on("click", ev)
-    if(this.sceneId !== -1) this.scene(o, this.sceneId)
   }
   private scene(o: SpielInterface.OptionInterface, sceneId: number){
     if(!(sceneId in this.saveObject)) this.saveObject[sceneId] = this.scenes[sceneId].entity
     setTimeout(async () =>{
       if("@camera" in this.saveObject[sceneId]){
-        if(isClass(this.saveObject[sceneId]["@camera"])) this.saveObject[sceneId]["@camera"] = ex(this.saveObject[sceneId]["@camera"] as unknown as new () =>SpielInterface.CameraInterface)
-        this.setEntity(o, this.scenes[sceneId], "@camera")
-        this.camera[sceneId] = (this.saveObject[sceneId]["@camera"] as unknown as SpielInterface.CameraInterface)
+        if(this.saveObject[sceneId]["@camera"].canvas === undefined){
+          if(isClass(this.saveObject[sceneId]["@camera"])) this.saveObject[sceneId]["@camera"] = ex(this.saveObject[sceneId]["@camera"] as unknown as new () =>SpielInterface.CameraInterface)
+          this.setEntity(o, this.scenes[sceneId], "@camera")
+          this.camera[sceneId] = (this.saveObject[sceneId]["@camera"] as unknown as SpielInterface.CameraInterface)
+        }
         if("init" in this.camera[sceneId]){
           this.camera[sceneId].init()
           if(o.save || ("save" in o)) this.camera[sceneId].init = () =>{}
@@ -360,8 +376,10 @@ export class Game{
       }
       for(const entityName in this.saveObject[sceneId]){
         if(entityName !== "@camera"){
-          if(isClass(this.saveObject[sceneId][entityName])) this.saveObject[sceneId][entityName] = ex(this.saveObject[sceneId][entityName] as unknown as new () =>SpielInterface.EntityInterface)
-          this.setEntity(o, this.scenes[sceneId], entityName, this.load[entityName] || this.load[this.saveObject[sceneId][entityName].useImage])
+          if(this.saveObject[sceneId][entityName].canvas === undefined){
+            if(isClass(this.saveObject[sceneId][entityName])) this.saveObject[sceneId][entityName] = ex(this.saveObject[sceneId][entityName] as unknown as new () =>SpielInterface.EntityInterface)
+            this.setEntity(o, this.scenes[sceneId], entityName, this.load[this.saveObject[sceneId][entityName].use] || this.load[entityName])
+          }
           if("init" in this.saveObject[sceneId][entityName]){
             this.saveObject[sceneId][entityName].init()
             if(o.save || ("save" in o)) this.saveObject[sceneId][entityName].init = () =>{}
@@ -379,6 +397,7 @@ export class Game{
         EventEmitter.emit("key:tick-increment")
         this.context.clearRect(0, 0, this.w, this.h)
         this.update(o, sceneId)
+        for(const plugin of this.plugins) plugin.sceneUpdate(this.saveObject[sceneId], this.use)
         if(this.use === this.scenes[sceneId].name) requestAnimationFrame(update)
         else if(sceneId !== -1) this.scene(o, this.sceneId)
       }
@@ -386,6 +405,7 @@ export class Game{
     })
   }
   private drawCamera(sceneId: number){
+    for(const plugin of this.plugins) plugin.cameraUpdate(this.camera[sceneId])
     this.context.drawImage(
       this.cameraBackground[sceneId],
       this.camera[sceneId].x, 
@@ -394,6 +414,7 @@ export class Game{
   }
   private draw(entityName: string, sceneId: number){
     this.context.save()
+    for(const plugin of this.plugins) plugin.entityUpdate(this.saveObject[sceneId][entityName])
     if(entityName in this.saveObject[sceneId]){
       const o = this.load[this.saveObject[sceneId][entityName].use] || this.load[entityName]
       this.context.globalAlpha = this.saveObject[sceneId][entityName].alpha

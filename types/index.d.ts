@@ -11,6 +11,7 @@ interface Key{
   getTick(): number
 }
 export interface OptionInterface{
+  plugins?: Array<Plugin>
   darkmode?: boolean
   pixel?: boolean
   canvas?: HTMLCanvasElement
@@ -21,7 +22,7 @@ export interface OptionInterface{
   state?: {}
 }
 interface AnyEntity{
-  [x: string]: EntityInterface | SpritEntityInterface | TextEntityInterface | any
+  [x: string]: EntityInterface | SpritEntityInterface | TextEntityInterface
 }
 export interface TextInterface{
   fontSize?: number
@@ -69,6 +70,7 @@ export interface CameraInterface{
 }
 export interface EntityInterface{
   on(event: string, fn: () =>any): void
+  off(event: string): void
   init(): void
   beforeRedraw(): void
   redraw(): void
@@ -134,6 +136,7 @@ export namespace Entity{
     public entityHeight: number
     public key: KeyManager
     on(event: string, fn: () =>any): void
+    off(event: string): void
     init(): void
     afterRedraw(): void
     redraw(): void
@@ -185,6 +188,19 @@ export namespace Entity{
     game?: Game
     background?: Promise<HTMLImageElement>
   }
+}
+export class Plugin{
+  public changeScene(entities: SceneEntity, sceneName: string | number): void
+  public sceneUpdate(entities: SceneEntity, sceneName: string | number): void
+  public entityUpdate(entity: EntityInterface | SpritEntityInterface | TextEntityInterface): void
+  public onEntity(entity: EntityInterface | SpritEntityInterface | TextEntityInterface): void
+  public onCanvas(canvas: HTMLCanvasElement, entities: SceneEntity, onEntities: {[x: string]: {[x: string]: () =>void}}): void
+  public onCamera(camera: CameraInterface): void
+  public cameraUpdate(camera: CameraInterface): void
+  public getKeys(key: KeyManager): void
+  public beforeSetEntities(o: OptionInterface)
+  public onFirstSetEntity(entity: EntityInterface | SpritEntityInterface | TextEntityInterface): void
+  public afterSetEntities(entities: SceneEntity): void
 }
 export class Game{
   public fps: number
