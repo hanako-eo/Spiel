@@ -1,14 +1,12 @@
-interface KeyManager{
-  add(key: string): void
-  remove(key: string): void
-  has(key: string): boolean
-  getKey(key: string): Key | null
-  clear(): void
-}
-interface Key{
-  getKey(): string
-  getTime(): number
-  getTick(): number
+import Contro from 'contro'
+import { Control } from "contro/dist/core/control"
+
+export interface ControlInterface{
+  gamepad: Contro.Gamepad;
+  keyboard: Contro.Keyboard;
+  mouse: Contro.Mouse;
+  detectAnd: (...controls: Control<boolean>[]) => Control<boolean>;
+  detectOr: (...controls: Control<any>[]) => Control<any>;
 }
 export interface OptionInterface{
   plugins?: Array<Plugin>
@@ -91,7 +89,7 @@ export interface EntityInterface{
   game?: Game
   body?: BodyEntityInterface
   hidden?: boolean
-  key?: KeyManager
+  control?: ControlInterface
   canvas: HTMLCanvasElement
   x?: number
   y?: number
@@ -134,7 +132,7 @@ export namespace Entity{
     public y: number
     public entityWidth: number
     public entityHeight: number
-    public key: KeyManager
+    public control: ControlInterface
     on(event: string, fn: () =>any): void
     off(event: string): void
     init(): void
@@ -190,17 +188,15 @@ export namespace Entity{
   }
 }
 export class Plugin{
-  public changeScene(entities: SceneEntity, sceneName: string | number): void
-  public sceneUpdate(entities: SceneEntity, sceneName: string | number): void
-  public entityUpdate(entity: EntityInterface | SpritEntityInterface | TextEntityInterface): void
-  public onEntity(entity: EntityInterface | SpritEntityInterface | TextEntityInterface): void
-  public onCanvas(canvas: HTMLCanvasElement, entities: SceneEntity, onEntities: {[x: string]: {[x: string]: () =>void}}): void
-  public onCamera(camera: CameraInterface): void
-  public cameraUpdate(camera: CameraInterface): void
-  public getKeys(key: KeyManager): void
-  public beforeSetEntities(o: OptionInterface)
-  public onFirstSetEntity(entity: EntityInterface | SpritEntityInterface | TextEntityInterface): void
-  public afterSetEntities(entities: SceneEntity): void
+  onEntity(entity: EntityInterface | SpritEntityInterface | TextEntityInterface): void
+  onFirstSetCamera(camera: CameraInterface): void
+  onCamera(camera: CameraInterface): void
+  changeScene(entities: SceneEntity, sceneName: string | number): void
+  sceneUpdate(entities: SceneEntity, sceneName: string | number): void
+  entityUpdate(entity: EntityInterface | SpritEntityInterface | TextEntityInterface): void
+  onCanvas(canvas: HTMLCanvasElement, entities: SceneEntity, onEntities: {[x: string]: {[x: string]: () =>void}}): void
+  cameraUpdate(camera: CameraInterface): void
+  onFirstSetEntity(entity: EntityInterface | SpritEntityInterface | TextEntityInterface): void
 }
 export class Game{
   public fps: number

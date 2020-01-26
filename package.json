@@ -45,5 +45,7 @@
     "url": "https://github.com/ashikuri/Spiel/issues"
   },
   "homepage": "https://github.com/ashikuri/Spiel#readme",
-  "dependencies": {}
+  "dependencies": {
+    "contro": "^2.1.3"
+  }
 }

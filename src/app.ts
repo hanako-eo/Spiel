@@ -2,7 +2,8 @@ import EventEmitter from "./EventEmitter"
 import SpielInterface from "./../types/index"
 import InvisibleClass from "./InvisibleClass"
 import uniformFunction from "./uniformFunction"
-import KeyManager from "./KeyManager"
+import Contro from 'contro'
+
 const isClass = (fn) =>{
   try {
     return /^\s*class/.test(fn.toString())
@@ -102,7 +103,6 @@ export namespace Loader{
     })
   }
 }
-
 // Class
 export namespace Entity{
   export class Image implements SpielInterface.EntityInterface{
@@ -120,7 +120,7 @@ export namespace Entity{
     public y: number
     public entityWidth: number
     public entityHeight: number
-    public key: KeyManager
+    public control: SpielInterface.ControlInterface
     init(){}
     afterRedraw(){}
     redraw(){}
@@ -173,19 +173,21 @@ export namespace Entity{
     setTarget(entity: string){}
   }
 }
-export class Plugin{
+export class Plugin implements SpielInterface.Plugin{
+  onCamera(camera: SpielInterface.CameraInterface): void{}
+  onEntity(entity: SpielInterface.EntityInterface | SpielInterface.SpritEntityInterface | SpielInterface.TextEntityInterface): void {}
+  onFirstSetCamera(camera: SpielInterface.CameraInterface): void {}
   changeScene(entities: SpielInterface.SceneEntity, sceneName: string | number){}
   sceneUpdate(entities: SpielInterface.SceneEntity, sceneName: string | number){}
   entityUpdate(entity: SpielInterface.EntityInterface | SpielInterface.SpritEntityInterface | SpielInterface.TextEntityInterface){}
   onCanvas(canvas: HTMLCanvasElement, entities: SpielInterface.SceneEntity, onEntities: {[x: string]: {[x: string]: () =>void}}){}
   cameraUpdate(camera: SpielInterface.CameraInterface){}
-  getKeys(key: KeyManager){}
   onFirstSetEntity(entity: SpielInterface.EntityInterface | SpielInterface.SpritEntityInterface | SpielInterface.TextEntityInterface){}
 }
 export class Game{
   public fps = 60
   public state = {}
-  private key = new KeyManager()
+  private control: SpielInterface.ControlInterface
   private plugins: Array<Plugin>
   private scenes: SpielInterface.SceneInterface[]
   private canvas: HTMLCanvasElement
@@ -210,6 +212,13 @@ export class Game{
     this.scenes = o.scene
     this.sceneId = 0
     this.use = this.scenes[this.sceneId].name
+    this.control = {
+      gamepad: new Contro.Gamepad(),
+      keyboard: new Contro.Keyboard(),
+      mouse: new Contro.Mouse({canvas: this.canvas}),
+      detectAnd: Contro.and,
+      detectOr: Contro.or
+    }
     for(const entityName in o.load) o.load[entityName].then((l) =>{
       if(l instanceof HTMLAudioElement) this.audio[entityName] = l
       else this.load[entityName] = l
@@ -317,28 +326,15 @@ export class Game{
         this.target[this.sceneId] = scene.entity[entity]
       }
     }
-    for(const plugin of this.plugins) plugin.onFirstSetEntity(entity)
+    for(const plugin of this.plugins){
+      if(entity instanceof Entity.Camera && entityName === "@camera") plugin.onFirstSetCamera(entity)
+      else plugin.onFirstSetEntity(entity)
+    }
   }
   private start(o: SpielInterface.OptionInterface){
     if(this.sceneId !== -1){
       this.scene(o, this.sceneId)
       if(this.onTarget[this.sceneId]　=== undefined) this.onTarget[this.sceneId] = {}
-      window.onkeydown = (ev: KeyboardEvent) =>{
-        ev.preventDefault()
-        const key = [ev.ctrlKey ? "Ctrl" : null, ev.altKey ? "Alt" : null, ev.shiftKey ? "Shift" : null, ev.key === "Control" || ev.key === "Alt" || ev.key === "Shift" ? null : ev.key === "Deconste" ? "Del" : ev.key === " " ? "Space" : ev.key]
-          .filter((keys) =>keys !== null)
-          .join("+")
-        if(key !== "Alt+F4") ev.preventDefault()
-        this.key.add(key)
-        for(const plugin of this.plugins) plugin.getKeys(this.key)
-      }
-      window.onkeyup = (ev: KeyboardEvent) =>{
-        this.key.remove([ev.ctrlKey || ev.key === "Control" ? "Ctrl" : null, ev.altKey || ev.key === "Alt" ? "Alt" : null, ev.shiftKey || ev.key === "Shift" ? "Shift" : null, ev.key === "Control" || ev.key === "Alt" || ev.key === "Shift" ? null : ev.key === "Deconste" ? "Del" : ev.key === " " ? "Space" : ev.key]
-          .filter((keys) =>keys !== null)
-          .join("+"))
-        for(const plugin of this.plugins) plugin.getKeys(this.key)
-      }
-
       for(const plugin of this.plugins) plugin.onCanvas(this.canvas, this.saveObject[this.sceneId], this.onTarget[this.sceneId])
       const on = (event: string, ev: MouseEvent) =>{
         for(const entityName in this.onTarget[this.sceneId]){
@@ -485,10 +481,12 @@ export class Game{
         }
       }
       this.drawCamera(sceneId)
+      for(const plugin of this.plugins) plugin.onCamera(this.camera[sceneId])
       this.camera[sceneId].update()
     }
     for(const entityName of Object.keys(this.saveObject[sceneId]).filter((n) =>n !== "@camera").sort((a, b) =>this.saveObject[sceneId][a].index - this.saveObject[sceneId][b].index)){
-      this.saveObject[sceneId][entityName].key = this.key
+      this.saveObject[sceneId][entityName].control = this.control
+      for(const plugin of this.plugins) plugin.onEntity(this.saveObject[sceneId][entityName])
       if("beforeRedraw" in this.saveObject[sceneId][entityName]) this.saveObject[sceneId][entityName].beforeRedraw()
       if("redraw" in this.saveObject[sceneId][entityName]) this.saveObject[sceneId][entityName].redraw()
       if(!this.saveObject[sceneId][entityName].hidden) this.draw(entityName, sceneId)
