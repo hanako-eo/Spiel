@@ -1,4 +1,4 @@
-import Contro from 'contro'
+import * as Contro from 'contro'
 import { Control } from "contro/dist/core/control"
 
 export interface ControlInterface{

@@ -65,12 +65,11 @@
                                 this.y = 100
                             }
                             redraw(){
-                                console.log(this.key.keys)
-                                // if(this.key.has("e")) console.log(this.scene.state.test)
-                                // if(this.key.has("ArrowUp")) this.y += -1
-                                // if(this.key.has("ArrowDown")) this.y += 1
-                                // if(this.key.has("ArrowLeft")) this.x += -1
-                                // if(this.key.has("ArrowRight")) this.x += 1
+                                if(this.control.keyboard.key("e").query()) console.log(this.scene.state.test)
+                                if(this.control.keyboard.key("ArrowUp").query()) this.y += -1
+                                if(this.control.keyboard.key("ArrowDown").query()) this.y += 1
+                                if(this.control.keyboard.key("ArrowLeft").query()) this.x += -1
+                                if(this.control.keyboard.key("ArrowRight").query()) this.x += 1
                             }
                         },
                         image1: Spiel.ex(class extends Spiel.Entity.Image{
@@ -85,11 +84,11 @@
                                 this.y = 100
                             }
                             redraw(){
-                                // if(this.key.has("z")) console.log(this.scene.state.test)
-                                // if(this.key.has("a")){
-                                //     this.scene.state.test = "test2"
-                                //     this.changeScene("scene2")
-                                // }
+                                if(this.control.keyboard.key("z").query()) console.log(this.scene.state.test)
+                                if(this.control.keyboard.key("a").query()){
+                                    this.scene.state.test = "test2"
+                                    this.changeScene("scene2")
+                                }
                             }
                         }),
                         image3: Spiel.ex(class extends Spiel.Entity.Image{
@@ -117,7 +116,7 @@
                                 this.y = 400
                             }
                             redraw(){
-                                if(this.key.has("z")){
+                                if(this.control.keyboard.key("z").query()){
                                     this.changeScene("scene1")
                                 }
                             }

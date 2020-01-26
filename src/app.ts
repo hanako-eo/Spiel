@@ -259,6 +259,7 @@ export class Game{
       throw new TypeError(`${name} is not Audio Element`)
     }
     if(!(entity instanceof Entity.Camera) && entityName !== "@camera"){
+      entity.control = this.control
       entity.on = (event, fn) =>{
         this.onTarget[this.sceneId][entityName] = {[event]: fn}
       }
@@ -485,7 +486,6 @@ export class Game{
       this.camera[sceneId].update()
     }
     for(const entityName of Object.keys(this.saveObject[sceneId]).filter((n) =>n !== "@camera").sort((a, b) =>this.saveObject[sceneId][a].index - this.saveObject[sceneId][b].index)){
-      this.saveObject[sceneId][entityName].control = this.control
       for(const plugin of this.plugins) plugin.onEntity(this.saveObject[sceneId][entityName])
       if("beforeRedraw" in this.saveObject[sceneId][entityName]) this.saveObject[sceneId][entityName].beforeRedraw()
       if("redraw" in this.saveObject[sceneId][entityName]) this.saveObject[sceneId][entityName].redraw()
