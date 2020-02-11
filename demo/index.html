@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Demo of Spiel</title>
 </head>
-<body>
+<body style="overflow: hidden;">
     <h1>Use "a" for change scene (scene1 => scene2)</h1>
     <h1>Use "z" for change scene (scene2 => scene1)</h1>
     <script src="./../lib/spiel.js"></script>
@@ -65,11 +65,12 @@
                                 this.y = 100
                             }
                             redraw(){
+                                console.log(this.collide("image1"))
                                 if(this.control.keyboard.key("e").query()) console.log(this.scene.state.test)
-                                if(this.control.keyboard.key("ArrowUp").query()) this.y += -1
-                                if(this.control.keyboard.key("ArrowDown").query()) this.y += 1
-                                if(this.control.keyboard.key("ArrowLeft").query()) this.x += -1
-                                if(this.control.keyboard.key("ArrowRight").query()) this.x += 1
+                                if(this.control.keyboard.key("ArrowUp").query()) this.y += -0.3
+                                if(this.control.keyboard.key("ArrowDown").query()) this.y += 0.3
+                                if(this.control.keyboard.key("ArrowLeft").query()) this.x += -0.3
+                                if(this.control.keyboard.key("ArrowRight").query()) this.x += 0.3
                             }
                         },
                         image1: Spiel.ex(class extends Spiel.Entity.Image{
@@ -89,13 +90,6 @@
                                     this.scene.state.test = "test2"
                                     this.changeScene("scene2")
                                 }
-                            }
-                        }),
-                        image3: Spiel.ex(class extends Spiel.Entity.Image{
-                            init(){
-                                this.use = "image2"
-                                this.x = 350
-                                this.y = 300
                             }
                         }),
                         text2: class extends Spiel.Entity.Text{

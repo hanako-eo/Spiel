@@ -74,7 +74,7 @@ export interface EntityInterface{
   redraw(): void
   afterRedraw(): void
   audio(name: string): HTMLAudioElement
-  collide(entity: string, border: number | null): boolean
+  collide(entity: string, border: number | null): { side: "top" | "left" | "bottom" | "right" | "inside" | "none", collide: boolean }
   getEntity(entity: string): EntityInterface
   changeScene(name: string | number): void
   tick(fn: () =>void, tick: number): void
@@ -140,7 +140,7 @@ export namespace Entity{
     redraw(): void
     beforeRedraw(): void
     audio(name: string): HTMLAudioElement
-    collide(entity: string): boolean
+    collide(entity: string): { side: "top" | "left" | "bottom" | "right" | "inside" | "none", collide: boolean }
     getEntity(entity: string): EntityInterface
     changeScene(name: string | number): void
     tick(fn: () =>void, tick: number): void
