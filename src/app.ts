@@ -116,11 +116,13 @@ export namespace Entity{
     public hidden = false
     public fixed = false
     public canvas: HTMLCanvasElement
-    public x: number
-    public y: number
+    public x: number = 0
+    public y: number = 0
     public entityWidth: number
     public entityHeight: number
     public control: SpielInterface.ControlInterface
+    public positions: Array<{x: number, y: number, scale?: number, sprit?: {x: number; y: number}, rotation?: number, fixed?: boolean}> = []
+    public rotation = 0
     init(){}
     afterRedraw(){}
     redraw(){}
@@ -184,8 +186,24 @@ export class Plugin implements SpielInterface.Plugin{
   cameraUpdate(camera: SpielInterface.CameraInterface){}
   onFirstSetEntity(entity: SpielInterface.EntityInterface | SpielInterface.SpritEntityInterface | SpielInterface.TextEntityInterface){}
 }
+export class FPSPlugin extends Plugin{
+  private fps = 0
+  private i = 0
+  constructor(){
+    super()
+    setInterval(() =>{
+      this.fps = this.i
+      this.i = 0
+    }, 1000)
+  }
+  public sceneUpdate(){
+    this.i++
+  }
+  public onEntity(entity: {[x: string]: any}){
+    if(this.fps !== entity.fps) entity.fps = this.fps
+  }
+}
 export class Game{
-  public fps = 60
   public state = {}
   private control: SpielInterface.ControlInterface
   private plugins: Array<Plugin>
@@ -209,7 +227,10 @@ export class Game{
     this.canvas.width = this.w
     this.context = this.canvas.getContext("2d")
     if(o.pixel) this.canvas.style.imageRendering = "pixelated"
-    this.scenes = o.scene
+    this.scenes = o.scene.map((scene) =>{
+      for(const entityName in scene.entity) if(isClass(scene.entity[entityName])) scene.entity[entityName] = ex(scene.entity[entityName] as unknown as new () =>SpielInterface.EntityInterface)
+      return scene
+    })
     this.sceneId = 0
     this.use = this.scenes[this.sceneId].name
     this.control = {
@@ -424,7 +445,6 @@ export class Game{
     setTimeout(async () =>{
       if("@camera" in this.saveObject[sceneId]){
         if(this.saveObject[sceneId]["@camera"].canvas === undefined){
-          if(isClass(this.saveObject[sceneId]["@camera"])) this.saveObject[sceneId]["@camera"] = ex(this.saveObject[sceneId]["@camera"] as unknown as new () =>SpielInterface.CameraInterface)
           this.setEntity(o, this.scenes[sceneId], "@camera")
           this.camera[sceneId] = (this.saveObject[sceneId]["@camera"] as unknown as SpielInterface.CameraInterface)
         }
@@ -439,10 +459,7 @@ export class Game{
       }
       for(const entityName in this.saveObject[sceneId]){
         if(entityName !== "@camera"){
-          if(this.saveObject[sceneId][entityName].canvas === undefined){
-            if(isClass(this.saveObject[sceneId][entityName])) this.saveObject[sceneId][entityName] = ex(this.saveObject[sceneId][entityName] as unknown as new () =>SpielInterface.EntityInterface)
-            this.setEntity(o, this.scenes[sceneId], entityName, this.load[this.saveObject[sceneId][entityName].use] || this.load[entityName])
-          }
+          if(this.saveObject[sceneId][entityName].canvas === undefined) this.setEntity(o, this.scenes[sceneId], entityName, this.load[this.saveObject[sceneId][entityName].use] || this.load[entityName])
           if("init" in this.saveObject[sceneId][entityName]){
             this.saveObject[sceneId][entityName].init()
             if(o.save || ("save" in o)) this.saveObject[sceneId][entityName].init = () =>{}
@@ -450,16 +467,10 @@ export class Game{
           this.draw(entityName, sceneId)
         }
       }
-      let i = 0
-      setInterval(() =>{
-        this.fps = i
-        i = 0
-      }, 1000)
-      const update = () =>{
-        i++
+      const update = async () =>{
         EventEmitter.emit("key:tick-increment")
         this.context.clearRect(0, 0, this.w, this.h)
-        this.update(o, sceneId)
+        await this.update(o, sceneId)
         for(const plugin of this.plugins) plugin.sceneUpdate(this.saveObject[sceneId], this.use)
         if(this.use === this.scenes[sceneId].name) requestAnimationFrame(update)
         else if(sceneId !== -1) this.scene(o, this.sceneId)
@@ -476,54 +487,126 @@ export class Game{
     )
   }
   private draw(entityName: string, sceneId: number){
-    this.context.save()
-    for(const plugin of this.plugins) plugin.entityUpdate(this.saveObject[sceneId][entityName])
+    const entity = this.saveObject[sceneId][entityName]
+    for(const plugin of this.plugins) plugin.entityUpdate(entity)
     if(entityName in this.saveObject[sceneId]){
-      const o = this.load[this.saveObject[sceneId][entityName].use] || this.load[entityName]
-      this.context.globalAlpha = this.saveObject[sceneId][entityName].alpha
+      const o = this.load[entity.use] || this.load[entityName]
+      this.context.globalAlpha = entity.alpha
       if(o instanceof HTMLImageElement){
-        if("sprit" in this.saveObject[sceneId][entityName]) this.context.drawImage(
-          o,
-          (this.saveObject[sceneId][entityName].entityWidth * (this.saveObject[sceneId][entityName] as SpielInterface.SpritEntityInterface).sprit.x),
-          (this.saveObject[sceneId][entityName].entityHeight * (this.saveObject[sceneId][entityName] as SpielInterface.SpritEntityInterface).sprit.y),
-          this.saveObject[sceneId][entityName].entityWidth,
-          this.saveObject[sceneId][entityName].entityHeight,
-          this.saveObject[sceneId][entityName].x + (this.camera[sceneId] === undefined || this.saveObject[sceneId][entityName].fixed ? 0 : this.camera[sceneId].x),
-          this.saveObject[sceneId][entityName].y + (this.camera[sceneId] === undefined || this.saveObject[sceneId][entityName].fixed ? 0 : this.camera[sceneId].y),
-          this.saveObject[sceneId][entityName].entityWidth * this.saveObject[sceneId][entityName].scale,
-          this.saveObject[sceneId][entityName].entityHeight * this.saveObject[sceneId][entityName].scale
-        ) 
-        else this.context.drawImage(
-          o, 
-          this.saveObject[sceneId][entityName].x + (this.camera[sceneId] === undefined || this.saveObject[sceneId][entityName].fixed ? 0 : this.camera[sceneId].x), 
-          this.saveObject[sceneId][entityName].y + (this.camera[sceneId] === undefined || this.saveObject[sceneId][entityName].fixed ? 0 : this.camera[sceneId].y),
-          this.saveObject[sceneId][entityName].entityWidth * this.saveObject[sceneId][entityName].scale,
-          this.saveObject[sceneId][entityName].entityHeight * this.saveObject[sceneId][entityName].scale
-        )
+        if("sprit" in entity){
+          this.context.save()
+          this.context.translate(
+            entity.x + (this.camera[sceneId] === undefined || entity.fixed ? 0 : this.camera[sceneId].x), 
+            entity.y + (this.camera[sceneId] === undefined || entity.fixed ? 0 : this.camera[sceneId].y)
+          )
+          this.context.rotate(entity.rotation * (Math.PI / 180))
+          this.context.drawImage(
+            o,
+            (entity.entityWidth * (entity as SpielInterface.SpritEntityInterface).sprit.x),
+            (entity.entityHeight * (entity as SpielInterface.SpritEntityInterface).sprit.y),
+            entity.entityWidth,
+            entity.entityHeight,
+            0,
+            0,
+            entity.entityWidth * entity.scale,
+            entity.entityHeight * entity.scale
+            ) 
+          this.context.restore()
+          entity.positions.forEach(({x, y, scale, sprit, rotation = 0, fixed = false}) =>{
+            this.context.save()
+            this.context.translate(
+              x + (this.camera[sceneId] === undefined || fixed ? 0 : this.camera[sceneId].x), 
+              y + (this.camera[sceneId] === undefined || fixed ? 0 : this.camera[sceneId].y)
+            )
+            this.context.rotate(rotation * (Math.PI / 180))
+            this.context.drawImage(
+              o,
+              (entity.entityWidth * (sprit || entity.sprit).x),
+              (entity.entityHeight * (sprit || entity.sprit).y),
+              entity.entityWidth,
+              entity.entityHeight,
+              0,
+              0,
+              entity.entityWidth * scale,
+              entity.entityHeight * scale
+            )
+            this.context.restore()
+          })
+        }
+        else{
+          this.context.save()
+          this.context.translate(
+            entity.x + (this.camera[sceneId] === undefined || entity.fixed ? 0 : this.camera[sceneId].x), 
+            entity.y + (this.camera[sceneId] === undefined || entity.fixed ? 0 : this.camera[sceneId].y)
+          )
+          this.context.rotate(entity.rotation * (Math.PI / 180))
+          this.context.drawImage(
+            o, 
+            0,
+            0,
+            entity.entityWidth * entity.scale,
+            entity.entityHeight * entity.scale
+          )
+          this.context.restore()
+          entity.positions.forEach(({x, y, rotation = 0, scale, fixed = false}) =>{
+            this.context.save()
+            this.context.translate(
+              x + (this.camera[sceneId] === undefined || fixed ? 0 : this.camera[sceneId].x), 
+              y + (this.camera[sceneId] === undefined || fixed ? 0 : this.camera[sceneId].y)
+            )
+            this.context.rotate(rotation * (Math.PI / 180))
+            this.context.drawImage(
+              o, 
+              0, 
+              0,
+              entity.entityWidth * (scale || entity.scale),
+              entity.entityHeight * (scale || entity.scale)
+            )
+            this.context.restore()
+          })
+        }
       }
       else if(!(o instanceof HTMLAudioElement)){
         let text = o.text
-        if("replaced" in this.saveObject[sceneId][entityName]) [(["", ""] as [string, string]), ...(this.saveObject[sceneId][entityName] as SpielInterface.TextEntityInterface).replaced].forEach((arr) =>{
-          text = text.replace(...arr).replace(/\*[a-z0-9_]+/i, (result) =>result.slice(1) in this.saveObject[sceneId][entityName] ? this.saveObject[sceneId][entityName][result.slice(1)] : result)
+        if("replaced" in entity) [(["", ""] as [string, string]), ...(entity as SpielInterface.TextEntityInterface).replaced].forEach((arr) =>{
+          text = text.replace(...arr).replace(/\*[a-z0-9_]+/i, (result) =>result.slice(1) in entity ? entity[result.slice(1)] : result)
         })
-        this.saveObject[sceneId][entityName].entityWidth = 0
-        this.saveObject[sceneId][entityName].entityHeight = 0
-        this.context.font = `${o.fontSize * this.saveObject[sceneId][entityName].scale}px ${o.fontFamily}`
+        entity.entityWidth = 0
+        entity.entityHeight = 0
+        this.context.save()
+        this.context.translate(
+          entity.x + (this.camera[sceneId] === undefined || entity.fixed ? 0 : this.camera[sceneId].x), 
+          entity.y + (this.camera[sceneId] === undefined || entity.fixed ? 0 : this.camera[sceneId].y) + (o.fontSize * entity.scale / 1.4)
+        )
+        this.context.rotate(entity.rotation * (Math.PI / 180))
+        this.context.font = `${o.fontSize * entity.scale}px ${o.fontFamily}`
         this.context.fillStyle = o.color
         text.split("\n").forEach((text, i) =>{
-          if(this.saveObject[sceneId][entityName].entityWidth < this.context.measureText(text).width) this.saveObject[sceneId][entityName].entityWidth = this.context.measureText(text).width
-          this.saveObject[sceneId][entityName].entityHeight = (o.fontSize * (i + 1) + o.padding * i)
-          this.context.fillText(
-            text.trim(), 
-            this.saveObject[sceneId][entityName].x + (this.camera[sceneId] === undefined || this.saveObject[sceneId][entityName].fixed ? 0 : this.camera[sceneId].x), 
-            this.saveObject[sceneId][entityName].y + (o.fontSize * this.saveObject[sceneId][entityName].scale / 1.4) + (this.camera[sceneId] === undefined || this.saveObject[sceneId][entityName].fixed ? 0 : this.camera[sceneId].y) + ((o.fontSize + o.padding) * i)
+          if(entity.entityWidth < this.context.measureText(text).width) entity.entityWidth = this.context.measureText(text).width
+          entity.entityHeight = (o.fontSize * (i + 1) + o.padding * i)
+          this.context.fillText(text.trim(), 0, ((o.fontSize + o.padding) * i))
+        })
+        this.context.restore()
+        entity.positions.forEach(({x, y, rotation = 0, scale, fixed = false}) =>{
+          this.context.save()
+          this.context.translate(
+            x + (this.camera[sceneId] === undefined || fixed ? 0 : this.camera[sceneId].x), 
+            y + (o.fontSize * scale / 1.4) + (this.camera[sceneId] === undefined || fixed ? 0 : this.camera[sceneId].y)
           )
+          this.context.rotate(rotation * (Math.PI / 180))
+          this.context.font = `${o.fontSize * scale}px ${o.fontFamily}`
+          this.context.fillStyle = o.color
+          text.split("\n").forEach((text, i) =>{
+            if(entity.entityWidth < this.context.measureText(text).width) entity.entityWidth = this.context.measureText(text).width
+            entity.entityHeight = (o.fontSize * (i + 1) + o.padding * i)
+            this.context.fillText(text.trim(), 0, ((o.fontSize + o.padding) * i))
+          })
+          this.context.restore()
         })
       }
     }
-    this.context.restore()
   }
-  private update(o: SpielInterface.OptionInterface, sceneId: number){
+  private async update(o: SpielInterface.OptionInterface, sceneId: number){
     if(this.scenes[sceneId].backgroundColor || o.darkmode || !("darkmode" in o)){
       this.context.save()
       this.context.fillStyle = this.scenes[sceneId].backgroundColor ? this.scenes[sceneId].backgroundColor : "#000"

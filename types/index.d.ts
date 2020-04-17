@@ -96,6 +96,8 @@ export interface EntityInterface{
   entityWidth?: number
   entityHeight?: number
   scale?: number
+  rotation?: number
+  positions?: Array<{x: number, y: number, scale?: number, sprit?: {x: number; y: number}, rotation?: number, fixed?: boolean}>
 }
 export interface SpritEntityInterface extends EntityInterface{
   sprit: {x: number; y: number}
@@ -199,7 +201,6 @@ export class Plugin{
   onFirstSetEntity(entity: EntityInterface | SpritEntityInterface | TextEntityInterface): void
 }
 export class Game{
-  public fps: number
   public state: {[x: string]: any}
   constructor(o: OptionInterface, w?: number, h?: number)
   createSaveJson(): string
