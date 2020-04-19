@@ -46,6 +46,6 @@
   },
   "homepage": "https://github.com/ashikuri/Spiel#readme",
   "dependencies": {
-    "contro": "^2.1.4"
+    "contro": "^2.2.0"
   }
 }

@@ -63,22 +63,14 @@
                                 this.index = 2
                                 this.x = 350
                                 this.y = 100
-                                this.positions = [
-                                    {
-                                        x: 150,
-                                        y: 50,
-                                        fixed: true
-                                    }
-                                ]
                             }
                             beforeRedraw(){
                                 if(this.rotation === 360) this.rotation = 0
                             }
                             redraw(){
                                 // console.log(this.fps)
-                                console.log(this.control.keyboard.directionalKeys("Arrows").query())
+                                console.log(this.collide("image1").collide)
                                 // console.log(this.control.gamepad.stick("right").query())
-                                if(this.control.keyboard.key("r").query() || this.control.gamepad.button("A").query()) this.rotation++
                                 if(this.control.keyboard.key("e").query()) console.log(this.scene.state.test)
                                 if(this.control.keyboard.key("ArrowUp").query()) this.y += -0.3
                                 if(this.control.keyboard.key("ArrowDown").query()) this.y += 0.3
@@ -96,6 +88,12 @@
                                 }
                                 this.x = 100
                                 this.y = 100
+                                this.clones = [
+                                    {
+                                        x: 150,
+                                        y: 50,
+                                    }
+                                ]
                             }
                             redraw(){
                                 if(this.control.keyboard.key("z").query()) console.log(this.scene.state.test)

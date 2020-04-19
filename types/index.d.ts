@@ -97,7 +97,7 @@ export interface EntityInterface{
   entityHeight?: number
   scale?: number
   rotation?: number
-  positions?: Array<{x: number, y: number, scale?: number, sprit?: {x: number; y: number}, rotation?: number, fixed?: boolean}>
+  clones?: Array<{x: number, y: number, scale?: number, sprit?: {x: number; y: number}, rotation?: number, fixed?: boolean}>
 }
 export interface SpritEntityInterface extends EntityInterface{
   sprit: {x: number; y: number}

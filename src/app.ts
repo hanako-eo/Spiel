@@ -121,7 +121,7 @@ export namespace Entity{
     public entityWidth: number
     public entityHeight: number
     public control: SpielInterface.ControlInterface
-    public positions: Array<{x: number, y: number, scale?: number, sprit?: {x: number; y: number}, rotation?: number, fixed?: boolean}> = []
+    public clones: Array<{x: number, y: number, scale?: number, sprit?: {x: number; y: number}, rotation?: number, fixed?: boolean}> = []
     public rotation = 0
     init(){}
     afterRedraw(){}
@@ -298,95 +298,20 @@ export class Game{
       if(l instanceof HTMLImageElement){
         if(entity.entityWidth === undefined) entity.entityWidth = l.width
         if(entity.entityHeight === undefined) entity.entityHeight = l.height
-        entity.collide = function(this: SpielInterface.EntityInterface, entity, border = null){
+        entity.collide = function(this: SpielInterface.EntityInterface, entityName, border = null){
+          const entitySelected = scene.entity[entityName]
           let isCollided = false
           let side: "top" | "left" | "bottom" | "right" | "inside" | "none" = "none"
-          if(border !== null){
-            let top = this.x < scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) &&
-              this.x + this.entityWidth > scene.entity[entity].x &&
-              this.y < scene.entity[entity].y + (border * scene.entity[entity].scale) &&
-              this.y + this.entityHeight > scene.entity[entity].y
-            let left = this.x < scene.entity[entity].x + (border * scene.entity[entity].scale) &&
-              this.x + this.entityWidth > scene.entity[entity].x &&
-              this.y < scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) &&
-              this.y + this.entityHeight > scene.entity[entity].y
-            let bottom = this.x < scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) &&
-              this.x + this.entityWidth > scene.entity[entity].x &&
-              this.y < scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) &&
-              this.y + this.entityHeight > scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) - (border * scene.entity[entity].scale)
-            let right = this.x < scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) - (border * scene.entity[entity].scale) &&
-              this.x + this.entityWidth > scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) &&
-              this.y < scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) &&
-              this.y + this.entityHeight > scene.entity[entity].y
-            let inside = this.x < scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) &&
-              this.x + this.entityWidth > scene.entity[entity].x &&
-              this.y < scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) &&
-              this.y + this.entityHeight > scene.entity[entity].y
-            
-            isCollided = top || left || bottom || right
-            
-            if(top) side = "top"
-            else if(left) side = "left"
-            else if(bottom) side = "bottom"
-            else if(right) side = "right"
-            else if(inside) side = "inside"
-          }else if(scene.entity[entity].body !== null){
-            let top = this.x < scene.entity[entity].x + scene.entity[entity].body.x + scene.entity[entity].body.width &&
-              this.x + this.entityWidth > scene.entity[entity].x + scene.entity[entity].body.x &&
-              this.y < scene.entity[entity].y + 1 &&
-              this.y + this.entityHeight > scene.entity[entity].y + scene.entity[entity].body.y
-            let left = this.x < scene.entity[entity].x + 1 &&
-              this.x + this.entityWidth > scene.entity[entity].x + scene.entity[entity].body.x &&
-              this.y < scene.entity[entity].y + scene.entity[entity].body.y + scene.entity[entity].body.height &&
-              this.y + this.entityHeight > scene.entity[entity].y + scene.entity[entity].body.y
-            let bottom = this.x < scene.entity[entity].x + scene.entity[entity].body.x + scene.entity[entity].body.width &&
-              this.x + this.entityWidth > scene.entity[entity].x + scene.entity[entity].body.x &&
-              this.y < scene.entity[entity].y + scene.entity[entity].body.y + scene.entity[entity].body.height &&
-              this.y + this.entityHeight > scene.entity[entity].y + scene.entity[entity].body.height + 1
-            let right = this.x < scene.entity[entity].x + scene.entity[entity].body.x + scene.entity[entity].body.width &&
-              this.x + this.entityWidth > scene.entity[entity].x + scene.entity[entity].body.width + 1 &&
-              this.y < scene.entity[entity].y + scene.entity[entity].body.y + scene.entity[entity].body.height &&
-              this.y + this.entityHeight > scene.entity[entity].y + scene.entity[entity].body.y
 
-            isCollided = this.x < scene.entity[entity].x + scene.entity[entity].body.x + scene.entity[entity].body.width &&
-              this.x + this.entityWidth > scene.entity[entity].x + scene.entity[entity].body.x &&
-              this.y < scene.entity[entity].y + scene.entity[entity].body.y + scene.entity[entity].body.height &&
-              this.y + this.entityHeight > scene.entity[entity].y + scene.entity[entity].body.y
-
-            if(top) side = "top"
-            else if(left) side = "left"
-            else if(bottom) side = "bottom"
-            else if(right) side = "right"
-            else if(isCollided) side = "inside"
-          }else{
-            let top = this.x < scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) &&
-              this.x + this.entityWidth > scene.entity[entity].x &&
-              this.y < scene.entity[entity].y + ( scene.entity[entity].scale) &&
-              this.y + this.entityHeight > scene.entity[entity].y
-            let left = this.x < scene.entity[entity].x + (scene.entity[entity].scale) &&
-              this.x + this.entityWidth > scene.entity[entity].x &&
-              this.y < scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) &&
-              this.y + this.entityHeight > scene.entity[entity].y
-            let bottom = this.x < scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) &&
-              this.x + this.entityWidth > scene.entity[entity].x &&
-              this.y < scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) &&
-              this.y + this.entityHeight > scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) - (scene.entity[entity].scale)
-            let right = this.x < scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) - (scene.entity[entity].scale) &&
-              this.x + this.entityWidth > scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) &&
-              this.y < scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) &&
-              this.y + this.entityHeight > scene.entity[entity].y
-
-            isCollided = this.x < scene.entity[entity].x + (scene.entity[entity].entityWidth * scene.entity[entity].scale) &&
-              this.x + this.entityWidth > scene.entity[entity].x &&
-              this.y < scene.entity[entity].y + (scene.entity[entity].entityHeight * scene.entity[entity].scale) &&
-              this.y + this.entityHeight > scene.entity[entity].y
-
-            if(top) side = "top"
-            else if(left) side = "left"
-            else if(bottom) side = "bottom"
-            else if(right) side = "right"
-            else if(isCollided) side = "inside"
-          }
+          let collitionEntitySelected = invisible.collide(this, entitySelected, entitySelected, border)
+          if(collitionEntitySelected.side !== "none") side = collitionEntitySelected.side
+          if(collitionEntitySelected.collide !== false) isCollided = collitionEntitySelected.collide
+          
+          entitySelected.clones.forEach((positionClone) =>{
+            let collitionCloneEntitySelected = invisible.collide(this, entitySelected, positionClone, border)
+            if(collitionCloneEntitySelected.side !== "none") side = collitionCloneEntitySelected.side
+            if(collitionCloneEntitySelected.collide !== false) isCollided = collitionCloneEntitySelected.collide
+          })
           return {
             side: side,
             collide: isCollided
@@ -512,7 +437,7 @@ export class Game{
             entity.entityHeight * entity.scale
             ) 
           this.context.restore()
-          entity.positions.forEach(({x, y, scale, sprit, rotation = 0, fixed = false}) =>{
+          entity.clones.forEach(({x, y, scale, sprit, rotation = 0, fixed = false}) =>{
             this.context.save()
             this.context.translate(
               x + (this.camera[sceneId] === undefined || fixed ? 0 : this.camera[sceneId].x), 
@@ -548,7 +473,7 @@ export class Game{
             entity.entityHeight * entity.scale
           )
           this.context.restore()
-          entity.positions.forEach(({x, y, rotation = 0, scale, fixed = false}) =>{
+          entity.clones.forEach(({x, y, rotation = 0, scale, fixed = false}) =>{
             this.context.save()
             this.context.translate(
               x + (this.camera[sceneId] === undefined || fixed ? 0 : this.camera[sceneId].x), 
@@ -587,7 +512,7 @@ export class Game{
           this.context.fillText(text.trim(), 0, ((o.fontSize + o.padding) * i))
         })
         this.context.restore()
-        entity.positions.forEach(({x, y, rotation = 0, scale, fixed = false}) =>{
+        entity.clones.forEach(({x, y, rotation = 0, scale, fixed = false}) =>{
           this.context.save()
           this.context.translate(
             x + (this.camera[sceneId] === undefined || fixed ? 0 : this.camera[sceneId].x), 
