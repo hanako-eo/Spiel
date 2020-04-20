@@ -1,10 +1,6 @@
 {
   "name": "spiel-engine",
-<<<<<<< HEAD
-  "version": "2.14.0",
-=======
-  "version": "2.14.1",
->>>>>>> fix: FPSPlugin
+  "version": "2.14.3",
   "description": "spiel (in German it's game) is a game engine",
   "main": "lib/spiel.js",
   "typings": "types/index.d.ts",

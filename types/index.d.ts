@@ -38,6 +38,7 @@ export interface SceneInterface{
   name: string | number
   entity: SceneEntity
   backgroundColor?: string
+  state: {}
   toScene?(prevScene: string | number): boolean
 }
 export interface BodyEntityInterface{
@@ -45,6 +46,14 @@ export interface BodyEntityInterface{
   y: number
   width: number
   height: number
+}
+export interface CloneInterface{
+  x: number
+  y: number
+  scale?: number
+  sprit?: {x: number; y: number}
+  rotation?: number
+  fixed?: boolean
 }
 export interface CameraInterface{
   init(): void
@@ -84,20 +93,20 @@ export interface EntityInterface{
   use: string
   alpha: number
   index: number
-  fixed?: boolean
-  scene?: SceneInterface
-  game?: Game
-  body?: BodyEntityInterface
-  hidden?: boolean
-  control?: ControlInterface
+  fixed: boolean
+  scene: SceneInterface
+  game: Game
+  body: BodyEntityInterface
+  hidden: boolean
+  control: ControlInterface
   canvas: HTMLCanvasElement
-  x?: number
-  y?: number
-  entityWidth?: number
-  entityHeight?: number
-  scale?: number
-  rotation?: number
-  clones?: Array<{x: number, y: number, scale?: number, sprit?: {x: number; y: number}, rotation?: number, fixed?: boolean}>
+  x: number
+  y: number
+  entityWidth: number
+  entityHeight: number
+  scale: number
+  rotation: number
+  clones: CloneInterface[]
 }
 export interface SpritEntityInterface extends EntityInterface{
   sprit: {x: number; y: number}
@@ -135,7 +144,12 @@ export namespace Entity{
     public entityWidth: number
     public entityHeight: number
     public control: ControlInterface
+    public rotation: number
     public fps: number
+    public scene: SceneInterface
+    public body: BodyEntityInterface
+    public hidden: boolean
+    public clones: CloneInterface[]
     on(event: string, fn: () =>any): void
     off(event: string): void
     init(): void
