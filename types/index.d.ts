@@ -38,7 +38,7 @@ export interface SceneInterface{
   name: string | number
   entity: SceneEntity
   backgroundColor?: string
-  state: {[x: string]: any}
+  state?: {[x: string]: any}
   toScene?(prevScene: string | number): boolean
 }
 export interface BodyEntityInterface{
