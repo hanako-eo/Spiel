@@ -135,6 +135,7 @@ export namespace Entity{
     public entityWidth: number
     public entityHeight: number
     public control: ControlInterface
+    public fps: number
     on(event: string, fn: () =>any): void
     off(event: string): void
     init(): void
@@ -200,6 +201,7 @@ export class Plugin{
   cameraUpdate(camera: CameraInterface): void
   onFirstSetEntity(entity: EntityInterface | SpritEntityInterface | TextEntityInterface): void
 }
+export class FPSPlugin extends Plugin{}
 export class Game{
   public state: {[x: string]: any}
   constructor(o: OptionInterface, w?: number, h?: number)
