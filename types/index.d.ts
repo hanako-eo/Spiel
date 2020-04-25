@@ -17,7 +17,7 @@ export interface OptionInterface{
   scene: Array<SceneInterface>
   save?: boolean
   loadScene?(ctx: CanvasRenderingContext2D, percentage: number): void
-  state?: {}
+  state?: {[x: string]: any}
 }
 interface AnyEntity{
   [x: string]: EntityInterface | SpritEntityInterface | TextEntityInterface
@@ -38,7 +38,7 @@ export interface SceneInterface{
   name: string | number
   entity: SceneEntity
   backgroundColor?: string
-  state: {}
+  state: {[x: string]: any}
   toScene?(prevScene: string | number): boolean
 }
 export interface BodyEntityInterface{
