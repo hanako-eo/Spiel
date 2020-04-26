@@ -68,7 +68,10 @@
                                 if(this.rotation === 360) this.rotation = 0
                             }
                             redraw(){
-                                console.log(this.fps)
+                                this.timeout(() =>{
+                                    console.clear()
+                                    console.log(this.fps)
+                                }, 1000, 4)
                                 // console.log(this.collide("image1").collide)
                                 // console.log(this.control.gamepad.stick("right").query())
                                 if(this.control.keyboard.key("e").query()) console.log(this.scene.state.test)

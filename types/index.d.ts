@@ -209,7 +209,7 @@ export class Plugin{
   onFirstSetCamera(camera: CameraInterface): void
   onCamera(camera: CameraInterface): void
   changeScene(entities: SceneEntity, sceneName: string | number): void
-  sceneUpdate(entities: SceneEntity, sceneName: string | number): void
+  sceneUpdate(entities: SceneEntity, sceneName: string | number, timestamp: number): void
   entityUpdate(entity: EntityInterface | SpritEntityInterface | TextEntityInterface): void
   onCanvas(canvas: HTMLCanvasElement, entities: SceneEntity, onEntities: {[x: string]: {[x: string]: () =>void}}): void
   cameraUpdate(camera: CameraInterface): void

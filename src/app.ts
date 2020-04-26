@@ -180,13 +180,15 @@ export class Plugin implements SpielInterface.Plugin{
   onEntity(entity: SpielInterface.EntityInterface | SpielInterface.SpritEntityInterface | SpielInterface.TextEntityInterface): void {}
   onFirstSetCamera(camera: SpielInterface.CameraInterface): void {}
   changeScene(entities: SpielInterface.SceneEntity, sceneName: string | number){}
-  sceneUpdate(entities: SpielInterface.SceneEntity, sceneName: string | number){}
+  sceneUpdate(entities: SpielInterface.SceneEntity, sceneName: string | number, timestamp: number){}
   entityUpdate(entity: SpielInterface.EntityInterface | SpielInterface.SpritEntityInterface | SpielInterface.TextEntityInterface){}
   onCanvas(canvas: HTMLCanvasElement, entities: SpielInterface.SceneEntity, onEntities: {[x: string]: {[x: string]: () =>void}}){}
   cameraUpdate(camera: SpielInterface.CameraInterface){}
   onFirstSetEntity(entity: SpielInterface.EntityInterface | SpielInterface.SpritEntityInterface | SpielInterface.TextEntityInterface){}
 }
 export class FPSPlugin extends Plugin{
+  private secondsPassed = 0
+  private oldTimeStamp = 0
   private fps = 0
   private i = 0
   constructor(){
@@ -196,8 +198,10 @@ export class FPSPlugin extends Plugin{
       this.i = 0
     }, 1000)
   }
-  public sceneUpdate(){
-    this.i++
+  public sceneUpdate(_, __, timestamp){
+    this.secondsPassed = (timestamp - this.oldTimeStamp) / 1000;
+    this.oldTimeStamp = timestamp;
+    this.fps = Math.round(1 / this.secondsPassed);
   }
   public onEntity(entity: {[x: string]: any}){
     if(this.fps !== entity.fps) entity.fps = this.fps
@@ -392,15 +396,15 @@ export class Game{
           this.draw(entityName, sceneId)
         }
       }
-      const update = async () =>{
+      const update = async (timestamp: number) =>{
+        if(this.use === this.scenes[sceneId].name) requestAnimationFrame(update)
+        else if(sceneId !== -1) this.scene(o, this.sceneId)
         EventEmitter.emit("key:tick-increment")
         this.context.clearRect(0, 0, this.w, this.h)
         await this.update(o, sceneId)
-        for(const plugin of this.plugins) plugin.sceneUpdate(this.saveObject[sceneId], this.use)
-        if(this.use === this.scenes[sceneId].name) requestAnimationFrame(update)
-        else if(sceneId !== -1) this.scene(o, this.sceneId)
+        for(const plugin of this.plugins) plugin.sceneUpdate(this.saveObject[sceneId], this.use, timestamp)
       }
-      requestAnimationFrame(update)
+      update(0)
     })
   }
   private drawCamera(sceneId: number){
